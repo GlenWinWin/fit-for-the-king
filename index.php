@@ -49,6 +49,187 @@ $current_date = date('l, F j');
     <title>FaithFit | Faith • Fitness • Progress</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Floating Action Button Styles */
+        .floating-action-buttons {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .floating-action-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .floating-action-btn.primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .floating-action-btn.secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .floating-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .floating-action-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Tooltip for buttons */
+        .floating-action-btn::after {
+            content: attr(title);
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--card-bg);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            margin-right: 10px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .floating-action-btn:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Mobile-specific improvements */
+        @media (max-width: 768px) {
+            .floating-action-buttons {
+                bottom: 70px;
+                right: 15px;
+            }
+
+            .floating-action-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.1rem;
+            }
+
+            .floating-action-btn::after {
+                display: none; /* Hide tooltips on mobile */
+            }
+        }
+
+        /* Prayer Request Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+        }
+
+        .close:hover {
+            color: var(--text-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .checkbox-label input {
+            margin-right: 8px;
+        }
+    </style>
 </head>
 <body class="<?php echo $theme_class; ?>">
     <div class="app-container">
@@ -275,6 +456,16 @@ $current_date = date('l, F j');
             </div>
         </main>
 
+        <!-- Floating Action Buttons -->
+        <div class="floating-action-buttons">
+            <button class="floating-action-btn primary" id="quick-prayer-request" title="Quick Prayer Request">
+                <i class="fas fa-hands-praying"></i>
+            </button>
+            <button class="floating-action-btn secondary" id="quick-note" title="Add Quick Note">
+                <i class="fas fa-sticky-note"></i>
+            </button>
+        </div>
+
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <a href="index.php" class="nav-item active">
@@ -292,7 +483,57 @@ $current_date = date('l, F j');
         </nav>
     </div>
 
-    <!-- Modals -->
+    <!-- Prayer Request Modal -->
+    <div class="modal" id="prayer-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Quick Prayer Request</h3>
+                <span class="close">&times;</span>
+            </div>
+            <form method="POST" action="api.php">
+                <input type="hidden" name="action" value="create_prayer_request">
+                <div class="form-group">
+                    <label for="prayer-title">Title (Optional)</label>
+                    <input type="text" class="form-control" id="prayer-title" name="title" placeholder="Brief title for your request">
+                </div>
+                <div class="form-group">
+                    <label for="prayer-content">Your Request</label>
+                    <textarea class="form-control" id="prayer-content" name="content" placeholder="Share your prayer request..." required rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                    Share Prayer
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Note Modal -->
+    <div class="modal" id="note-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Quick Note</h3>
+                <span class="close">&times;</span>
+            </div>
+            <form method="POST" action="api.php">
+                <input type="hidden" name="action" value="create_note">
+                <div class="form-group">
+                    <label for="note-title">Title (Optional)</label>
+                    <input type="text" class="form-control" id="note-title" name="title" placeholder="Note title">
+                </div>
+                <div class="form-group">
+                    <label for="note-content">Your Note</label>
+                    <textarea class="form-control" id="note-content" name="content" placeholder="Write your note..." required rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    Save Note
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Modals (Weight and Steps) -->
     <div class="modal" id="weight-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -390,6 +631,26 @@ $current_date = date('l, F j');
         updateTime();
         setInterval(updateTime, 60000);
 
+        // Floating action buttons
+        const quickPrayerBtn = document.getElementById('quick-prayer-request');
+        const quickNoteBtn = document.getElementById('quick-note');
+        const prayerModal = document.getElementById('prayer-modal');
+        const noteModal = document.getElementById('note-modal');
+
+        // Open prayer modal
+        if (quickPrayerBtn) {
+            quickPrayerBtn.addEventListener('click', function() {
+                prayerModal.style.display = 'flex';
+            });
+        }
+
+        // Open note modal
+        if (quickNoteBtn) {
+            quickNoteBtn.addEventListener('click', function() {
+                noteModal.style.display = 'flex';
+            });
+        }
+
         // Task click handlers
         const todoItems = document.querySelectorAll('.todo-item');
         todoItems.forEach(item => {
@@ -436,12 +697,12 @@ $current_date = date('l, F j');
         }
 
         // Quick action buttons
-        const quickPrayerBtn = document.getElementById('quick-prayer');
+        const quickPrayerActionBtn = document.getElementById('quick-prayer');
         const quickWorkoutBtn = document.getElementById('quick-workout');
         const quickBibleBtn = document.getElementById('quick-bible');
 
-        if (quickPrayerBtn) {
-            quickPrayerBtn.addEventListener('click', function() {
+        if (quickPrayerActionBtn) {
+            quickPrayerActionBtn.addEventListener('click', function() {
                 // Redirect to community page with prayer tab active
                 window.location.href = 'community.php';
             });
@@ -480,6 +741,72 @@ $current_date = date('l, F j');
                 event.target.style.display = 'none';
             }
         });
+
+        // Form submission handling for new modals
+        const prayerForm = document.querySelector('#prayer-modal form');
+        const noteForm = document.querySelector('#note-modal form');
+
+        if (prayerForm) {
+            prayerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        return response.text();
+                    }
+                })
+                .then(data => {
+                    // Close modal and show success message
+                    prayerModal.style.display = 'none';
+                    alert('Prayer request shared successfully!');
+                    // Optionally refresh the page or update UI
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error sharing prayer request. Please try again.');
+                });
+            });
+        }
+
+        if (noteForm) {
+            noteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        return response.text();
+                    }
+                })
+                .then(data => {
+                    // Close modal and show success message
+                    noteModal.style.display = 'none';
+                    alert('Note saved successfully!');
+                    // Optionally refresh the page or update UI
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving note. Please try again.');
+                });
+            });
+        }
     });
     </script>
 </body>
