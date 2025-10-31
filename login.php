@@ -339,6 +339,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             font-size: 1rem;
             transition: all 0.3s ease;
             font-family: inherit;
+            padding-right: 50px;
         }
 
         .form-control:focus {
@@ -363,6 +364,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             cursor: pointer;
             font-size: 1rem;
             padding: 5px;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--primary);
         }
 
         .name-fields {
@@ -528,10 +541,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             
             .form-control {
                 padding: 14px 16px;
+                padding-right: 45px;
             }
             
             .btn-auth {
                 padding: 14px 16px;
+            }
+            
+            .password-toggle {
+                width: 25px;
+                height: 25px;
+                right: 12px;
             }
         }
 
