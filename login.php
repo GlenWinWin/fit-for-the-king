@@ -355,7 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
         .password-toggle {
             position: absolute;
-            right: 15px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -363,14 +363,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             color: var(--text-secondary-dark);
             cursor: pointer;
             font-size: 1rem;
-            padding: 5px;
-            width: 30px;
-            height: 30px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            transition: all 0.3s ease;
+            line-height: 1;
+        }
+
+        .password-toggle i {
+            display: block;
+            line-height: 1;
         }
 
         .password-toggle:hover {
