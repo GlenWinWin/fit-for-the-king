@@ -598,7 +598,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                         <img src="imgs/white-logo.png" width="100" height="100"/>
                     </div>
                     <h1 class="hero-title">Fit for the King</h1>
-                    <p class="hero-subtitle">Transform your body, strengthen your faith</p>
+                    <p class="hero-subtitle">Increasing faith while building muscles</p>
                     
                     <div class="hero-features">
                         <div class="feature-item">
