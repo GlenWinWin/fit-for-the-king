@@ -1,0 +1,93 @@
+/* Community Header Layout */
+.prayer-header,
+.testimonial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.prayer-user-info,
+.testimonial-user-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+}
+
+.prayer-category-tag,
+.testimonial-category-tag {
+    background: var(--accent-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 12px;
+}
+
+/* Mobile adjustments - Keep category on right but adjust spacing */
+@media (max-width: 768px) {
+
+    .prayer-header,
+    .testimonial-header {
+        flex-direction: row;
+        /* Keep horizontal layout */
+        align-items: center;
+        /* Better vertical alignment */
+        gap: 8px;
+    }
+
+    .prayer-user-info,
+    .testimonial-user-info {
+        min-width: 0;
+        /* Allow shrinking */
+    }
+
+    .prayer-category-tag,
+    .testimonial-category-tag {
+        margin-left: 8px;
+        font-size: 0.75rem;
+        padding: 3px 10px;
+        flex-shrink: 0;
+        /* Prevent category from shrinking */
+    }
+
+    .prayer-info,
+    .testimonial-info {
+        min-width: 0;
+        /* Allow text truncation */
+    }
+
+    .prayer-name,
+    .testimonial-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+        /* Limit name width */
+    }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+
+    .prayer-user-info,
+    .testimonial-user-info {
+        gap: 8px;
+    }
+
+    .prayer-category-tag,
+    .testimonial-category-tag {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        margin-left: 6px;
+    }
+
+    .prayer-name,
+    .testimonial-name {
+        max-width: 100px;
+        /* Further limit name width on very small screens */
+    }
+}
