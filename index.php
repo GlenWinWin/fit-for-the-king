@@ -50,95 +50,361 @@ $current_date = date('l, F j');
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        /* Floating Action Button Styles */
-        .floating-action-buttons {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
+        /* Original Theme Styles */
+        .main-content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+
+        .time-display {
+            margin-bottom: 20px;
+        }
+
+        .time {
+            font-size: 3rem;
+            font-weight: 300;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .date {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .page-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .main-card {
+            text-align: center;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .card-title-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .card-title-section h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .streak-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-count {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: var(--hover-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        /* Progress */
+        .progress-container {
+            margin: 30px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .card-description {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 25px 0;
+        }
+
+        /* Todo List */
+        .todo-list {
             display: flex;
             flex-direction: column;
+            gap: 15px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background: var(--hover-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .todo-item:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .todo-item.completed {
+            background: rgba(76, 175, 80, 0.1);
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .todo-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .todo-item.completed .todo-checkbox {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .todo-checkbox i {
+            color: white;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .todo-item.completed .todo-checkbox i {
+            opacity: 1;
+        }
+
+        .todo-content {
+            flex: 1;
+            text-align: left;
+        }
+
+        .todo-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 5px 0;
+            color: var(--text-color);
+        }
+
+        .todo-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .todo-status {
+            font-size: 1.2rem;
+        }
+
+        .completed-icon {
+            color: #4CAF50;
+        }
+
+        .not-completed-icon {
+            color: var(--border-color);
+        }
+
+        /* Devotion Card */
+        .devotion-card .card-header {
+            justify-content: center;
+            text-align: center;
+        }
+
+        .devotion-card .card-header h2 {
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .devotion-content {
+            text-align: center;
+        }
+
+        .bible-verse {
+            margin-bottom: 25px;
+            padding: 25px;
+            background: var(--hover-color);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .verse-text {
+            font-size: 1.3rem;
+            font-style: italic;
+            color: var(--text-color);
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .verse-reference {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .devotion-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--text-color);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             gap: 10px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: var(--hover-color);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Floating Action Buttons */
+        .floating-action-buttons {
+            position: fixed;
+            bottom: 90px;
+            right: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             z-index: 1000;
         }
 
         .floating-action-btn {
-            width: 56px;
-            height: 56px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             border: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .floating-action-btn.primary {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .floating-action-btn.secondary {
-            background: var(--secondary-color);
-            color: white;
+            background: #FDB022;
+            color: #000;
         }
 
         .floating-action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 6px 25px rgba(253, 176, 34, 0.5);
         }
 
-        .floating-action-btn:active {
-            transform: translateY(0);
-        }
-
-        /* Tooltip for buttons */
-        .floating-action-btn::after {
-            content: attr(title);
-            position: absolute;
-            right: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--card-bg);
-            color: var(--text-color);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            margin-right: 10px;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .floating-action-btn:hover::after {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Mobile-specific improvements */
-        @media (max-width: 768px) {
-            .floating-action-buttons {
-                bottom: 70px;
-                right: 15px;
-            }
-
-            .floating-action-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 1.1rem;
-            }
-
-            .floating-action-btn::after {
-                display: none; /* Hide tooltips on mobile */
-            }
-        }
-
-        /* Prayer Request Modal Styles */
+        /* Modals - Updated Design */
         .modal {
             display: none;
             position: fixed;
@@ -146,77 +412,162 @@ $current_date = date('l, F j');
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             z-index: 2000;
             align-items: center;
             justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .modal-content {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 24px;
-            width: 90%;
-            max-width: 500px;
+            background: #2A2A2A;
+            border-radius: 15px;
+            padding: 40px 35px;
+            width: 100%;
+            max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid #3A3A3A;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .light-mode .modal-content {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .modal-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 0;
+            border-bottom: none;
         }
 
         .modal-title {
             margin: 0;
-            font-size: 1.5rem;
-            color: var(--text-color);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #FDB022;
+        }
+
+        .light-mode .modal-title {
+            color: #FDB022;
         }
 
         .close {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             cursor: pointer;
-            color: var(--text-muted);
+            color: #999;
             background: none;
             border: none;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
         }
 
         .close:hover {
-            color: var(--text-color);
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode .close:hover {
+            color: #000;
+            background: rgba(0, 0, 0, 0.05);
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
-            color: var(--text-color);
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .light-mode .form-group label {
+            color: #000;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border-color);
+            padding: 14px 16px;
+            border: 1px solid #3A3A3A;
             border-radius: 8px;
-            background: var(--input-bg);
-            color: var(--text-color);
+            background: #1A1A1A;
+            color: #ccc;
             font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .light-mode .form-control {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        .form-control::placeholder {
+            color: #666;
+        }
+
+        .light-mode .form-control::placeholder {
+            color: #999;
         }
 
         .form-control:focus {
             outline: none;
-            border-color: var(--primary-color);
+            border-color: #FDB022;
+            background: #1A1A1A;
+            box-shadow: 0 0 0 3px rgba(253, 176, 34, 0.1);
+        }
+
+        .light-mode .form-control:focus {
+            background: #fff;
+            border-color: #FDB022;
         }
 
         textarea.form-control {
             resize: vertical;
-            min-height: 120px;
+            min-height: 140px;
+            line-height: 1.6;
+        }
+
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ccc' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px;
+            padding-right: 40px;
+        }
+
+        .light-mode select.form-control {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
         }
 
         .checkbox-label {
@@ -224,10 +575,155 @@ $current_date = date('l, F j');
             align-items: center;
             cursor: pointer;
             font-weight: normal;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: #ccc;
         }
 
-        .checkbox-label input {
-            margin-right: 8px;
+        .light-mode .checkbox-label {
+            color: #333;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #FDB022;
+        }
+
+        /* Modal Submit Button */
+        .modal-content .btn-primary {
+            width: 100%;
+            padding: 14px 24px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            background: #FDB022;
+            color: #000;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .modal-content .btn-primary:hover {
+            background: #E5A020;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(253, 176, 34, 0.4);
+        }
+
+        .modal-content .btn-primary i {
+            font-size: 1.1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            .page-header {
+                margin-bottom: 30px;
+            }
+
+            .time {
+                font-size: 2.5rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 25px 20px;
+            }
+
+            .card-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .floating-action-buttons {
+                bottom: 80px;
+                right: 20px;
+            }
+
+            .floating-action-btn {
+                width: 55px;
+                height: 55px;
+                font-size: 1.3rem;
+            }
+
+            .modal-content {
+                padding: 30px 25px;
+                margin: 10px;
+            }
+
+            .modal-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .time {
+                font-size: 2rem;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                padding: 20px 15px;
+            }
+
+            .todo-item {
+                padding: 15px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+
+            .modal-content {
+                padding: 25px 20px;
+            }
+        }
+        /* Light mode form controls */
+        .light-mode .form-control {
+            background: #ffffff;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        .light-mode .form-control::placeholder {
+            color: #999;
+        }
+
+        .light-mode .form-control:focus {
+            background: #ffffff;
+            border-color: #FDB022;
+        }
+
+        /* Fix the select dropdown arrow for light mode */
+        .light-mode select.form-control {
+            background-color: #ffffff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+        }
+        
+        select.form-control {
+            appearance: none;
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px;
+            padding-right: 40px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ccc' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+        }
+
+        .light-mode select.form-control {
+            background-color: #ffffff;
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
         }
     </style>
 </head>
@@ -283,173 +779,120 @@ $current_date = date('l, F j');
                 </div>
 
                 <div class="content-grid">
-                    <div class="main-content-area">
-                        <div class="card main-card">
-                            <div class="card-header">
-                                <div class="card-title-section">
-                                    <h2>Daily Goals</h2>
-                                    <div class="streak-badge">
-                                        <i class="fas fa-fire"></i>
-                                        <span><?php echo $dashboard_data['devotion_streak'] ?? 0; ?> Day Streak</span>
-                                    </div>
-                                </div>
-                                <span class="progress-count"><?php echo $completed_tasks; ?>/3 completed</span>
-                            </div>
-                            
-                            <!-- Progress Bar -->
-                            <div class="progress-container">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: <?php echo $progress_percentage; ?>%;"></div>
-                                </div>
-                                <div class="progress-text"><?php echo round($progress_percentage); ?>% Complete</div>
-                            </div>
-
-                            <p class="card-description">Complete your daily habits to build a stronger faith and body.</p>
-
-                            <div class="divider"></div>
-
-                            <!-- Daily Tasks -->
-                            <div class="todo-list">
-                                <!-- Devotion Task -->
-                                <div class="todo-item <?php echo $daily_todos['devotion_completed'] ? 'completed' : ''; ?>" data-task="devotion">
-                                    <div class="todo-checkbox">
-                                        <i class="fas fa-check"></i>
-                                    </div>
-                                    <div class="todo-content">
-                                        <h3 class="todo-title">Daily Devotion</h3>
-                                        <p class="todo-subtitle">
-                                            <?php echo $daily_todos['devotion_completed'] ? 'Completed today' : 'Read today\'s devotion'; ?>
-                                        </p>
-                                    </div>
-                                    <div class="todo-status">
-                                        <?php if ($daily_todos['devotion_completed']): ?>
-                                            <i class="fas fa-check-circle completed-icon"></i>
-                                        <?php else: ?>
-                                            <i class="fas fa-circle not-completed-icon"></i>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-
-                                <!-- Weight Logging Task -->
-                                <div class="todo-item <?php echo $daily_todos['weight_logged'] ? 'completed' : ''; ?>" data-task="weight">
-                                    <div class="todo-checkbox">
-                                        <i class="fas fa-check"></i>
-                                    </div>
-                                    <div class="todo-content">
-                                        <h3 class="todo-title">Log Your Weight</h3>
-                                        <p class="todo-subtitle">
-                                            <?php if ($daily_todos['weight_logged'] && isset($dashboard_data['current_weight'])): ?>
-                                                Today: <?php echo $dashboard_data['current_weight']['weight_value']; ?> <?php echo strtoupper($dashboard_data['current_weight']['weight_unit']); ?>
-                                            <?php else: ?>
-                                                Track your progress
-                                            <?php endif; ?>
-                                        </p>
-                                    </div>
-                                    <div class="todo-status">
-                                        <?php if ($daily_todos['weight_logged']): ?>
-                                            <i class="fas fa-check-circle completed-icon"></i>
-                                        <?php else: ?>
-                                            <i class="fas fa-circle not-completed-icon"></i>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-
-                                <!-- Steps Logging Task -->
-                                <div class="todo-item <?php echo $daily_todos['steps_logged'] ? 'completed' : ''; ?>" data-task="steps">
-                                    <div class="todo-checkbox">
-                                        <i class="fas fa-check"></i>
-                                    </div>
-                                    <div class="todo-content">
-                                        <h3 class="todo-title">Log Your Steps</h3>
-                                        <p class="todo-subtitle">
-                                            <?php if ($daily_todos['steps_logged']): ?>
-                                                Today: <?php echo number_format($dashboard_data['today_steps'] ?? 0); ?> steps
-                                            <?php else: ?>
-                                                Stay active daily
-                                            <?php endif; ?>
-                                        </p>
-                                    </div>
-                                    <div class="todo-status">
-                                        <?php if ($daily_todos['steps_logged']): ?>
-                                            <i class="fas fa-check-circle completed-icon"></i>
-                                        <?php else: ?>
-                                            <i class="fas fa-circle not-completed-icon"></i>
-                                        <?php endif; ?>
-                                    </div>
+                    <!-- Daily Goals Card -->
+                    <div class="card main-card">
+                        <div class="card-header">
+                            <div class="card-title-section">
+                                <h2>Daily Goals</h2>
+                                <div class="streak-badge">
+                                    <i class="fas fa-fire"></i>
+                                    <span><?php echo $dashboard_data['devotion_streak'] ?? 0; ?> Day Streak</span>
                                 </div>
                             </div>
+                            <span class="progress-count"><?php echo $completed_tasks; ?>/3 completed</span>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: <?php echo $progress_percentage; ?>%;"></div>
+                            </div>
+                            <div class="progress-text"><?php echo round($progress_percentage); ?>% Complete</div>
                         </div>
 
-                        <!-- Devotion Card -->
-                        <div class="card devotion-card">
-                            <div class="card-header">
-                                <h2>Today's Devotion</h2>
-                                <button class="btn btn-secondary" id="complete-devotion" <?php echo $daily_todos['devotion_completed'] ? 'disabled' : ''; ?>>
+                        <p class="card-description">Complete your daily habits to build a stronger faith and body.</p>
+
+                        <div class="divider"></div>
+
+                        <!-- Daily Tasks -->
+                        <div class="todo-list">
+                            <!-- Devotion Task -->
+                            <div class="todo-item <?php echo $daily_todos['devotion_completed'] ? 'completed' : ''; ?>" data-task="devotion">
+                                <div class="todo-checkbox">
                                     <i class="fas fa-check"></i>
-                                    Mark Complete
-                                </button>
-                            </div>
-                            <div class="devotion-content">
-                                <div class="bible-verse">
-                                    <p class="verse-text">"<?php echo htmlspecialchars($devotion['verse_text'] ?? 'I can do all things through Christ who strengthens me.'); ?>"</p>
-                                    <p class="verse-reference">— <?php echo htmlspecialchars($devotion['verse_reference'] ?? 'Philippians 4:13'); ?></p>
                                 </div>
-                                <div class="devotion-text">
-                                    <p><?php echo htmlspecialchars($devotion['devotion_text'] ?? 'In our fitness journey, we often focus on building physical strength through our own efforts. But true strength comes from surrendering to God\'s plan and allowing His power to work through us.'); ?></p>
+                                <div class="todo-content">
+                                    <h3 class="todo-title">Daily Devotion</h3>
+                                    <p class="todo-subtitle">
+                                        <?php echo $daily_todos['devotion_completed'] ? 'Completed today' : 'Read today\'s devotion'; ?>
+                                    </p>
+                                </div>
+                                <div class="todo-status">
+                                    <?php if ($daily_todos['devotion_completed']): ?>
+                                        <i class="fas fa-check-circle completed-icon"></i>
+                                    <?php else: ?>
+                                        <i class="fas fa-circle not-completed-icon"></i>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Weight Logging Task -->
+                            <div class="todo-item <?php echo $daily_todos['weight_logged'] ? 'completed' : ''; ?>" data-task="weight">
+                                <div class="todo-checkbox">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="todo-content">
+                                    <h3 class="todo-title">Log Your Weight</h3>
+                                    <p class="todo-subtitle">
+                                        <?php if ($daily_todos['weight_logged'] && isset($dashboard_data['current_weight'])): ?>
+                                            Today: <?php echo $dashboard_data['current_weight']['weight_value']; ?> <?php echo strtoupper($dashboard_data['current_weight']['weight_unit']); ?>
+                                        <?php else: ?>
+                                            Track your progress
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                                <div class="todo-status">
+                                    <?php if ($daily_todos['weight_logged']): ?>
+                                        <i class="fas fa-check-circle completed-icon"></i>
+                                    <?php else: ?>
+                                        <i class="fas fa-circle not-completed-icon"></i>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Steps Logging Task -->
+                            <div class="todo-item <?php echo $daily_todos['steps_logged'] ? 'completed' : ''; ?>" data-task="steps">
+                                <div class="todo-checkbox">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="todo-content">
+                                    <h3 class="todo-title">Log Your Steps</h3>
+                                    <p class="todo-subtitle">
+                                        <?php if ($daily_todos['steps_logged']): ?>
+                                            Today: <?php echo number_format($dashboard_data['today_steps'] ?? 0); ?> steps
+                                        <?php else: ?>
+                                            Stay active daily
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                                <div class="todo-status">
+                                    <?php if ($daily_todos['steps_logged']): ?>
+                                        <i class="fas fa-check-circle completed-icon"></i>
+                                    <?php else: ?>
+                                        <i class="fas fa-circle not-completed-icon"></i>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Sidebar -->
-                    <div class="sidebar">
-                        <!-- Progress Stats -->
-                        <div class="stats-card">
-                            <h3>Weekly Progress</h3>
-                            <div class="stat-item">
-                                <div class="stat-info">
-                                    <div class="stat-label">Workouts Completed</div>
-                                    <div class="stat-value">2/4</div>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 50%;"></div>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-info">
-                                    <div class="stat-label">Prayer Time</div>
-                                    <div class="stat-value">45min</div>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 75%;"></div>
-                                </div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-info">
-                                    <div class="stat-label">Steps Average</div>
-                                    <div class="stat-value"><?php echo number_format($dashboard_data['today_steps'] ?? 6842); ?></div>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: <?php echo min(100, (($dashboard_data['today_steps'] ?? 0) / ($dashboard_data['step_goal'] ?? 8000)) * 100); ?>%;"></div>
-                                </div>
-                            </div>
+                    <!-- Devotion Card -->
+                    <div class="card devotion-card">
+                        <div class="card-header">
+                            <h2>Today's Devotion</h2>
+                            <button class="btn btn-secondary" id="complete-devotion" <?php echo $daily_todos['devotion_completed'] ? 'disabled' : ''; ?>>
+                                <i class="fas fa-check"></i>
+                                Mark Complete
+                            </button>
                         </div>
-
-                        <!-- Quick Actions -->
-                        <div class="quick-actions-card">
-                            <h3>Quick Actions</h3>
-                            <button class="quick-btn" id="quick-prayer">
-                                <i class="fas fa-pray"></i>
-                                Prayer Time
-                            </button>
-                            <button class="quick-btn" id="quick-workout">
-                                <i class="fas fa-dumbbell"></i>
-                                Start Workout
-                            </button>
-                            <button class="quick-btn" id="quick-bible">
-                                <i class="fas fa-bible"></i>
-                                Daily Reading
-                            </button>
+                        <div class="devotion-content">
+                            <div class="bible-verse">
+                                <p class="verse-text">"<?php echo htmlspecialchars($devotion['verse_text'] ?? 'I can do all things through Christ who strengthens me.'); ?>"</p>
+                                <p class="verse-reference">— <?php echo htmlspecialchars($devotion['verse_reference'] ?? 'Philippians 4:13'); ?></p>
+                            </div>
+                            <div class="devotion-text">
+                                <p><?php echo htmlspecialchars($devotion['devotion_text'] ?? 'In our fitness journey, we often focus on building physical strength through our own efforts. But true strength comes from surrendering to God\'s plan and allowing His power to work through us.'); ?></p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -458,11 +901,8 @@ $current_date = date('l, F j');
 
         <!-- Floating Action Buttons -->
         <div class="floating-action-buttons">
-            <button class="floating-action-btn primary" id="quick-prayer-request" title="Quick Prayer Request">
+            <button class="floating-action-btn" id="share-prayer-btn" title="Share Prayer Request">
                 <i class="fas fa-hands-praying"></i>
-            </button>
-            <button class="floating-action-btn secondary" id="quick-note" title="Add Quick Note">
-                <i class="fas fa-sticky-note"></i>
             </button>
         </div>
 
@@ -487,53 +927,46 @@ $current_date = date('l, F j');
     <div class="modal" id="prayer-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Quick Prayer Request</h3>
+                <h3 class="modal-title">Share Prayer Request</h3>
                 <span class="close">&times;</span>
             </div>
             <form method="POST" action="api.php">
                 <input type="hidden" name="action" value="create_prayer_request">
                 <div class="form-group">
-                    <label for="prayer-title">Title (Optional)</label>
-                    <input type="text" class="form-control" id="prayer-title" name="title" placeholder="Brief title for your request">
+                    <label for="testimonial-title">Title (Optional)</label>
+                    <input type="text" class="form-control" id="testimonial-title" name="title" placeholder="Brief title for your request">
                 </div>
                 <div class="form-group">
-                    <label for="prayer-content">Your Request</label>
-                    <textarea class="form-control" id="prayer-content" name="content" placeholder="Share your prayer request..." required rows="4"></textarea>
+                    <label for="testimonial-category">Category</label>
+                    <select class="form-control" id="testimonial-category" name="category">
+                        <option value="fitness">Fitness Goals</option>
+                        <option value="healing">Healing</option>
+                        <option value="strength">Strength</option>
+                        <option value="discipline">Discipline</option>
+                        <option value="spiritual">Spiritual Growth</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="testimonial-content">Your Request</label>
+                    <textarea class="form-control" id="testimonial-content" name="content" placeholder="Share your prayer request..." required rows="5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_anonymous" value="1">
+                        <span class="checkmark"></span>
+                        Share anonymously
+                    </label>
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-paper-plane"></i>
-                    Share Prayer
+                    Share Request
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Quick Note Modal -->
-    <div class="modal" id="note-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add Quick Note</h3>
-                <span class="close">&times;</span>
-            </div>
-            <form method="POST" action="api.php">
-                <input type="hidden" name="action" value="create_note">
-                <div class="form-group">
-                    <label for="note-title">Title (Optional)</label>
-                    <input type="text" class="form-control" id="note-title" name="title" placeholder="Note title">
-                </div>
-                <div class="form-group">
-                    <label for="note-content">Your Note</label>
-                    <textarea class="form-control" id="note-content" name="content" placeholder="Write your note..." required rows="4"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i>
-                    Save Note
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Existing Modals (Weight and Steps) -->
+    <!-- Weight Modal -->
     <div class="modal" id="weight-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -565,6 +998,7 @@ $current_date = date('l, F j');
         </div>
     </div>
 
+    <!-- Steps Modal -->
     <div class="modal" id="steps-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -632,22 +1066,22 @@ $current_date = date('l, F j');
         setInterval(updateTime, 60000);
 
         // Floating action buttons
-        const quickPrayerBtn = document.getElementById('quick-prayer-request');
-        const quickNoteBtn = document.getElementById('quick-note');
+        const sharePrayerBtn = document.getElementById('share-prayer-btn');
+        const shareTestimonialBtn = document.getElementById('share-testimonial-btn');
         const prayerModal = document.getElementById('prayer-modal');
-        const noteModal = document.getElementById('note-modal');
+        const testimonialModal = document.getElementById('testimonial-modal');
 
         // Open prayer modal
-        if (quickPrayerBtn) {
-            quickPrayerBtn.addEventListener('click', function() {
+        if (sharePrayerBtn) {
+            sharePrayerBtn.addEventListener('click', function() {
                 prayerModal.style.display = 'flex';
             });
         }
 
-        // Open note modal
-        if (quickNoteBtn) {
-            quickNoteBtn.addEventListener('click', function() {
-                noteModal.style.display = 'flex';
+        // Open testimonial modal
+        if (shareTestimonialBtn) {
+            shareTestimonialBtn.addEventListener('click', function() {
+                testimonialModal.style.display = 'flex';
             });
         }
 
@@ -696,34 +1130,6 @@ $current_date = date('l, F j');
             });
         }
 
-        // Quick action buttons
-        const quickPrayerActionBtn = document.getElementById('quick-prayer');
-        const quickWorkoutBtn = document.getElementById('quick-workout');
-        const quickBibleBtn = document.getElementById('quick-bible');
-
-        if (quickPrayerActionBtn) {
-            quickPrayerActionBtn.addEventListener('click', function() {
-                // Redirect to community page with prayer tab active
-                window.location.href = 'community.php';
-            });
-        }
-
-        if (quickWorkoutBtn) {
-            quickWorkoutBtn.addEventListener('click', function() {
-                // Placeholder for workout functionality
-                alert('Workout feature coming soon!');
-            });
-        }
-
-        if (quickBibleBtn) {
-            quickBibleBtn.addEventListener('click', function() {
-                // Scroll to devotion section
-                document.querySelector('.devotion-card').scrollIntoView({ 
-                    behavior: 'smooth' 
-                });
-            });
-        }
-
         // Modal functionality
         const modals = document.querySelectorAll('.modal');
         const closeButtons = document.querySelectorAll('.close');
@@ -742,17 +1148,16 @@ $current_date = date('l, F j');
             }
         });
 
-        // Form submission handling for new modals
-        const prayerForm = document.querySelector('#prayer-modal form');
-        const noteForm = document.querySelector('#note-modal form');
-
-        if (prayerForm) {
-            prayerForm.addEventListener('submit', function(e) {
+        // Form submission handling
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 const formData = new FormData(this);
+                const action = this.getAttribute('action');
                 
-                fetch(this.action, {
+                fetch(action, {
                     method: 'POST',
                     body: formData
                 })
@@ -764,49 +1169,13 @@ $current_date = date('l, F j');
                     }
                 })
                 .then(data => {
-                    // Close modal and show success message
-                    prayerModal.style.display = 'none';
-                    alert('Prayer request shared successfully!');
-                    // Optionally refresh the page or update UI
+                    // Handle success - you might want to show a success message
+                    // and refresh the content instead of redirecting
                     window.location.reload();
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error sharing prayer request. Please try again.');
-                });
+                .catch(error => console.error('Error:', error));
             });
-        }
-
-        if (noteForm) {
-            noteForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = new FormData(this);
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    } else {
-                        return response.text();
-                    }
-                })
-                .then(data => {
-                    // Close modal and show success message
-                    noteModal.style.display = 'none';
-                    alert('Note saved successfully!');
-                    // Optionally refresh the page or update UI
-                    window.location.reload();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error saving note. Please try again.');
-                });
-            });
-        }
+        });
     });
     </script>
 </body>
