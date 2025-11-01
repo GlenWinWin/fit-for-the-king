@@ -117,6 +117,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
                 $_SESSION['message_type'] = 'error';
             }
             break;
+
+        case 'assign_workout':
+            $workout_plan_id = intval($_POST['workout_plan_id']);
+            if ($workout_plan_id > 0) {
+                $result = $faithFit->assignWorkoutPlan($user_id, $workout_plan_id);
+                if ($result) {
+                    $_SESSION['message'] = 'Workout plan assigned successfully!';
+                    $_SESSION['message_type'] = 'success';
+                } else {
+                    $_SESSION['message'] = 'Error assigning workout plan';
+                    $_SESSION['message_type'] = 'error';
+                }
+            }
+            break;
+
+        case 'complete_workout':
+            $result = $faithFit->completeWorkout($user_id);
+            if ($result) {
+                $_SESSION['message'] = 'Workout completed! Great job!';
+                $_SESSION['message_type'] = 'success';
+            } else {
+                $_SESSION['message'] = 'Error completing workout';
+                $_SESSION['message_type'] = 'error';
+            }
+            break;
+
+        case 'advance_workout_day':
+            $result = $faithFit->advanceWorkoutDay($user_id);
+            if ($result) {
+                $_SESSION['message'] = 'Moving to next workout day!';
+                $_SESSION['message_type'] = 'success';
+            } else {
+                $_SESSION['message'] = 'Error advancing workout day';
+                $_SESSION['message_type'] = 'error';
+            }
+            break;
             
         case 'update_theme':
             $theme = $_POST['theme'] ?? 'dark';
@@ -180,7 +216,7 @@ if (isset($_GET['api'])) {
             case 'dashboard':
                 if ($method == 'GET') {
                     $stats = $faithFit->getDashboardStats($user_id);
-                    $devotion = $faithFit->getDailyDevotion($user_id);
+                    $devotion = $faithFit->getDailyDevotion();
                     $weight_history = $faithFit->getWeightHistory($user_id, 7);
                     $steps_history = $faithFit->getStepsHistory($user_id, 7);
                     
@@ -196,7 +232,7 @@ if (isset($_GET['api'])) {
             case 'devotion':
                 if ($method == 'GET') {
                     $date = $_GET['date'] ?? null;
-                    $devotion = $faithFit->getDailyDevotion($user_id, $date);
+                    $devotion = $faithFit->getDailyDevotion();
                     sendSuccess($devotion);
                 } elseif ($method == 'POST') {
                     $date = $input['date'] ?? null;
@@ -335,6 +371,20 @@ if (isset($_GET['api'])) {
                 if ($method == 'GET') {
                     $streaks = $faithFit->getUserStreaks($user_id);
                     sendSuccess($streaks);
+                }
+                break;
+
+            case 'workouts':
+                if ($method == 'GET') {
+                    $workouts = $faithFit->getWorkoutPlans();
+                    sendSuccess($workouts);
+                }
+                break;
+
+            case 'active-workout':
+                if ($method == 'GET') {
+                    $workout = $faithFit->getUserActiveWorkout($user_id);
+                    sendSuccess($workout);
                 }
                 break;
 

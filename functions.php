@@ -489,9 +489,12 @@ class FaithFitFunctions {
 
             // If no todos for TODAY, create fresh ones
             if (!$todos) {
+                // Check if user has an active workout
+                $hasWorkout = $this->getUserActiveWorkout($user_id) !== null;
+                
                 // Create new todo record for today
-                $insertQuery = "INSERT INTO daily_todos (user_id, todo_date, devotion_completed, weight_logged, steps_logged) 
-                               VALUES (:user_id, :todo_date, false, false, false)";
+                $insertQuery = "INSERT INTO daily_todos (user_id, todo_date, devotion_completed, weight_logged, steps_logged, workout_completed) 
+                               VALUES (:user_id, :todo_date, false, false, false, false)";
                 $insertStmt = $this->conn->prepare($insertQuery);
                 $insertStmt->bindParam(":user_id", $user_id);
                 $insertStmt->bindParam(":todo_date", $date);
@@ -502,21 +505,28 @@ class FaithFitFunctions {
                         'devotion_completed' => false,
                         'weight_logged' => false,
                         'steps_logged' => false,
+                        'workout_completed' => false,
+                        'has_workout' => $hasWorkout,
                         'todo_date' => $date
                     ];
                 }
+            } else {
+                // Add workout info to existing todos
+                $todos['has_workout'] = $this->getUserActiveWorkout($user_id) !== null;
             }
 
-            // Return whatever we found (could be today's or an old date)
             return $todos;
 
         } catch(PDOException $e) {
             error_log("Todo error: " . $e->getMessage());
             // Return default structure on error
+            $hasWorkout = $this->getUserActiveWorkout($user_id) !== null;
             return [
                 'devotion_completed' => false,
                 'weight_logged' => false,
                 'steps_logged' => false,
+                'workout_completed' => false,
+                'has_workout' => $hasWorkout,
                 'todo_date' => $date
             ];
         }
@@ -552,7 +562,7 @@ class FaithFitFunctions {
 
     private function checkAndUpdateStreak($user_id, $date) {
         try {
-            $query = "SELECT devotion_completed, weight_logged, steps_logged 
+            $query = "SELECT devotion_completed, weight_logged, steps_logged, workout_completed 
                     FROM daily_todos 
                     WHERE user_id = :user_id AND todo_date = :todo_date";
             $stmt = $this->conn->prepare($query);
@@ -562,9 +572,19 @@ class FaithFitFunctions {
             
             $todos = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($todos && $todos['devotion_completed'] && $todos['weight_logged'] && $todos['steps_logged']) {
-                // All todos completed - update streak
-                $this->updateStreak($user_id, 'daily_tasks');
+            if ($todos) {
+                $allCompleted = $todos['devotion_completed'] && $todos['weight_logged'] && $todos['steps_logged'];
+                
+                // If user has workout, include it in completion check
+                $hasWorkout = $this->getUserActiveWorkout($user_id) !== null;
+                if ($hasWorkout) {
+                    $allCompleted = $allCompleted && $todos['workout_completed'];
+                }
+                
+                if ($allCompleted) {
+                    // All todos completed - update streak
+                    $this->updateStreak($user_id, 'daily_tasks');
+                }
             }
             
             return true;
@@ -593,6 +613,129 @@ class FaithFitFunctions {
             return $updateStmt->execute();
         } catch(PDOException $e) {
             error_log("Remove prayer error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // WORKOUT ASSIGNMENT AND TRACKING FUNCTIONS
+    public function assignWorkoutPlan($user_id, $workout_plan_id) {
+        try {
+            // Deactivate any current active workout
+            $deactivateQuery = "UPDATE user_workout_assignments SET is_active = 0 WHERE user_id = :user_id AND is_active = 1";
+            $deactivateStmt = $this->conn->prepare($deactivateQuery);
+            $deactivateStmt->bindParam(":user_id", $user_id);
+            $deactivateStmt->execute();
+
+            // Assign new workout
+            $query = "INSERT INTO user_workout_assignments (user_id, workout_plan_id, start_date, assigned_day) 
+                    VALUES (:user_id, :workout_plan_id, CURDATE(), 1)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->bindParam(":workout_plan_id", $workout_plan_id, PDO::PARAM_INT);
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Assign workout error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getUserActiveWorkout($user_id) {
+        try {
+            $query = "SELECT uwa.*, wp.name as plan_name, wp.duration_weeks, wp.difficulty,
+                             wd.name as day_name, wd.description as day_description
+                      FROM user_workout_assignments uwa
+                      JOIN workout_plans wp ON uwa.workout_plan_id = wp.id
+                      JOIN workout_days wd ON (wp.id = wd.workout_plan_id AND wd.day_number = uwa.assigned_day)
+                      WHERE uwa.user_id = :user_id AND uwa.is_active = 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->execute();
+            
+            $workout = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($workout) {
+                // Get exercises for this day
+                $exercisesQuery = "SELECT wde.*, e.name, e.muscle_group, e.equipment, e.demonstration_video_url
+                                 FROM workout_day_exercises wde
+                                 JOIN exercises e ON wde.exercise_id = e.id
+                                 JOIN workout_days wd ON wde.workout_day_id = wd.id
+                                 WHERE wd.workout_plan_id = :plan_id AND wd.day_number = :day_number
+                                 ORDER BY wde.exercise_order";
+                $exercisesStmt = $this->conn->prepare($exercisesQuery);
+                $exercisesStmt->bindParam(":plan_id", $workout['workout_plan_id']);
+                $exercisesStmt->bindParam(":day_number", $workout['assigned_day']);
+                $exercisesStmt->execute();
+                
+                $workout['exercises'] = $exercisesStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            return $workout;
+        } catch(PDOException $e) {
+            error_log("Get user active workout error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function completeWorkout($user_id) {
+        try {
+            // Mark workout as completed in daily todos
+            $this->updateDailyTodo($user_id, 'workout_completed', true);
+            
+            // Update streak
+            $this->updateStreak($user_id, 'workout');
+            
+            return true;
+        } catch(PDOException $e) {
+            error_log("Complete workout error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function advanceWorkoutDay($user_id) {
+        try {
+            $currentWorkout = $this->getUserActiveWorkout($user_id);
+            if (!$currentWorkout) return false;
+            
+            // Get total days in this workout plan
+            $daysQuery = "SELECT COUNT(*) as total_days FROM workout_days WHERE workout_plan_id = :plan_id";
+            $daysStmt = $this->conn->prepare($daysQuery);
+            $daysStmt->bindParam(":plan_id", $currentWorkout['workout_plan_id']);
+            $daysStmt->execute();
+            $totalDays = $daysStmt->fetch(PDO::FETCH_ASSOC)['total_days'];
+            
+            $nextDay = $currentWorkout['assigned_day'] + 1;
+            if ($nextDay > $totalDays) {
+                $nextDay = 1; // Restart from day 1
+            }
+            
+            $updateQuery = "UPDATE user_workout_assignments SET assigned_day = :next_day WHERE user_id = :user_id AND is_active = 1";
+            $updateStmt = $this->conn->prepare($updateQuery);
+            $updateStmt->bindParam(":next_day", $nextDay, PDO::PARAM_INT);
+            $updateStmt->bindParam(":user_id", $user_id);
+            
+            return $updateStmt->execute();
+        } catch(PDOException $e) {
+            error_log("Advance workout day error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function logWorkoutSet($user_id, $workout_day_exercise_id, $set_number, $weight, $reps_completed, $weight_unit = 'kg') {
+        try {
+            $query = "INSERT INTO user_workout_logs (user_id, workout_day_exercise_id, set_number, weight, weight_unit, reps_completed) 
+                     VALUES (:user_id, :workout_day_exercise_id, :set_number, :weight, :weight_unit, :reps_completed)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->bindParam(":workout_day_exercise_id", $workout_day_exercise_id, PDO::PARAM_INT);
+            $stmt->bindParam(":set_number", $set_number, PDO::PARAM_INT);
+            $stmt->bindParam(":weight", $weight);
+            $stmt->bindParam(":weight_unit", $weight_unit);
+            $stmt->bindParam(":reps_completed", $reps_completed, PDO::PARAM_INT);
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Log workout set error: " . $e->getMessage());
             return false;
         }
     }

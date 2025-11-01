@@ -12,9 +12,18 @@ $dashboard_data = $faithFit->getDashboardStats($user_id);
 // Get daily todos
 $daily_todos = $faithFit->getDailyTodos($user_id);
 
+// Get active workout
+$active_workout = $faithFit->getUserActiveWorkout($user_id);
+
 // Calculate completed tasks
 $completed_tasks = 0;
-$total_tasks = 3;
+$total_tasks = 3; // Start with 3 basic tasks
+
+// Add workout task if user has one
+if ($daily_todos['has_workout']) {
+    $total_tasks = 4;
+    if ($daily_todos['workout_completed']) $completed_tasks++;
+}
 
 // Check if todos were retrieved successfully
 if ($daily_todos) {
@@ -26,7 +35,9 @@ if ($daily_todos) {
     $daily_todos = [
         'devotion_completed' => false,
         'weight_logged' => false,
-        'steps_logged' => false
+        'steps_logged' => false,
+        'workout_completed' => false,
+        'has_workout' => $active_workout !== null
     ];
 }
 
@@ -403,6 +414,119 @@ $current_date = date('l, F j');
             box-shadow: 0 6px 25px rgba(253, 176, 34, 0.5);
         }
 
+        /* Workout Styles */
+        .workout-info {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--hover-color);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .workout-info h4 {
+            margin: 0 0 10px 0;
+            color: var(--text-color);
+            font-size: 1.3rem;
+        }
+
+        .workout-day {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin: 0 0 10px 0;
+        }
+
+        .workout-description {
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .exercises-list {
+            margin-bottom: 25px;
+        }
+
+        .exercises-list h5 {
+            margin: 0 0 15px 0;
+            color: var(--text-color);
+            font-size: 1.1rem;
+        }
+
+        .exercise-item {
+            padding: 15px;
+            background: var(--hover-color);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .exercise-header h6 {
+            margin: 0;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .exercise-sets {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .exercise-details {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+
+        .muscle-group, .equipment {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .video-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .video-link:hover {
+            text-decoration: underline;
+        }
+
+        .workout-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .workout-actions .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .no-workout {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .no-workout p {
+            margin-bottom: 20px;
+            color: var(--text-muted);
+        }
+
         /* Modals - Updated Design */
         .modal {
             display: none;
@@ -611,6 +735,25 @@ $current_date = date('l, F j');
             font-size: 1.1rem;
         }
 
+        /* Steps Info */
+        .steps-info {
+            margin: 15px 0;
+            padding: 15px;
+            background: var(--hover-color);
+            border-radius: 8px;
+        }
+
+        .step-goal-display {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        .step-progress {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .main-content {
@@ -658,6 +801,16 @@ $current_date = date('l, F j');
             .modal-title {
                 font-size: 1.5rem;
             }
+
+            .workout-actions {
+                flex-direction: column;
+            }
+
+            .exercise-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -686,6 +839,7 @@ $current_date = date('l, F j');
                 padding: 25px 20px;
             }
         }
+
         /* Light mode form controls */
         .light-mode .form-control {
             background: #ffffff;
@@ -753,6 +907,10 @@ $current_date = date('l, F j');
                                     <i class="fas fa-user"></i>
                                     Profile
                                 </a>
+                                <a href="workouts.php">
+                                    <i class="fas fa-dumbbell"></i>
+                                    Workouts
+                                </a>
                                 <a href="logout.php">
                                     <i class="fas fa-sign-out-alt"></i>
                                     Logout
@@ -788,7 +946,7 @@ $current_date = date('l, F j');
                                     <span><?php echo $dashboard_data['devotion_streak'] ?? 0; ?> Day Streak</span>
                                 </div>
                             </div>
-                            <span class="progress-count"><?php echo $completed_tasks; ?>/3 completed</span>
+                            <span class="progress-count"><?php echo $completed_tasks; ?>/<?php echo $total_tasks; ?> completed</span>
                         </div>
                         
                         <!-- Progress Bar -->
@@ -872,6 +1030,34 @@ $current_date = date('l, F j');
                                     <?php endif; ?>
                                 </div>
                             </div>
+
+                            <!-- Workout Task - Only show if user has an active workout -->
+                            <?php if ($daily_todos['has_workout']): ?>
+                            <div class="todo-item <?php echo $daily_todos['workout_completed'] ? 'completed' : ''; ?>" data-task="workout">
+                                <div class="todo-checkbox">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="todo-content">
+                                    <h3 class="todo-title">Today's Workout</h3>
+                                    <p class="todo-subtitle">
+                                        <?php 
+                                        if ($active_workout) {
+                                            echo htmlspecialchars($active_workout['day_name']);
+                                        } else {
+                                            echo 'Complete your workout';
+                                        }
+                                        ?>
+                                    </p>
+                                </div>
+                                <div class="todo-status">
+                                    <?php if ($daily_todos['workout_completed']): ?>
+                                        <i class="fas fa-check-circle completed-icon"></i>
+                                    <?php else: ?>
+                                        <i class="fas fa-dumbbell not-completed-icon"></i>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -885,6 +1071,7 @@ $current_date = date('l, F j');
                             </button>
                         </div>
                         <div class="devotion-content">
+                            <?php $devotion = $faithFit->getDailyDevotion(); ?>
                             <div class="bible-verse">
                                 <p class="verse-text">"<?php echo htmlspecialchars($devotion['verse_text'] ?? 'I can do all things through Christ who strengthens me.'); ?>"</p>
                                 <p class="verse-reference">— <?php echo htmlspecialchars($devotion['verse_reference'] ?? 'Philippians 4:13'); ?></p>
@@ -914,6 +1101,10 @@ $current_date = date('l, F j');
             <a href="analytics.php" class="nav-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Analytics</span>
+            </a>
+            <a href="workouts.php" class="nav-item">
+                <i class="fas fa-dumbbell"></i>
+                <span>Workouts</span>
             </a>
             <a href="community.php" class="nav-item">
                 <i class="fas fa-users"></i>
@@ -1026,6 +1217,76 @@ $current_date = date('l, F j');
         </div>
     </div>
 
+    <!-- Workout Modal -->
+    <div class="modal" id="workout-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Today's Workout</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="workout-content">
+                <?php if ($active_workout): ?>
+                    <div class="workout-info">
+                        <h4><?php echo htmlspecialchars($active_workout['plan_name']); ?></h4>
+                        <p class="workout-day">Day <?php echo $active_workout['assigned_day']; ?>: <?php echo htmlspecialchars($active_workout['day_name']); ?></p>
+                        <?php if (!empty($active_workout['day_description'])): ?>
+                            <p class="workout-description"><?php echo htmlspecialchars($active_workout['day_description']); ?></p>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="exercises-list">
+                        <h5>Exercises:</h5>
+                        <?php foreach ($active_workout['exercises'] as $exercise): ?>
+                            <div class="exercise-item">
+                                <div class="exercise-header">
+                                    <h6><?php echo htmlspecialchars($exercise['name']); ?></h6>
+                                    <span class="exercise-sets"><?php echo $exercise['sets']; ?> sets × <?php echo $exercise['reps']; ?> reps</span>
+                                </div>
+                                <div class="exercise-details">
+                                    <span class="muscle-group"><?php echo ucfirst($exercise['muscle_group']); ?></span>
+                                    <span class="equipment"><?php echo ucfirst($exercise['equipment']); ?></span>
+                                </div>
+                                <?php if (!empty($exercise['demonstration_video_url'])): ?>
+                                    <a href="<?php echo htmlspecialchars($exercise['demonstration_video_url']); ?>" target="_blank" class="video-link">
+                                        <i class="fas fa-play-circle"></i> Watch Demo
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    
+                    <div class="workout-actions">
+                        <form method="POST" action="api.php" class="workout-complete-form">
+                            <input type="hidden" name="action" value="complete_workout">
+                            <button type="submit" class="btn btn-primary" <?php echo $daily_todos['workout_completed'] ? 'disabled' : ''; ?>>
+                                <i class="fas fa-check"></i>
+                                <?php echo $daily_todos['workout_completed'] ? 'Workout Completed' : 'Mark as Complete'; ?>
+                            </button>
+                        </form>
+                        
+                        <?php if ($daily_todos['workout_completed']): ?>
+                            <form method="POST" action="api.php" class="workout-advance-form">
+                                <input type="hidden" name="action" value="advance_workout_day">
+                                <button type="submit" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-right"></i>
+                                    Next Day
+                                </button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="no-workout">
+                        <p>You don't have an active workout plan assigned.</p>
+                        <a href="workouts.php" class="btn btn-primary">
+                            <i class="fas fa-dumbbell"></i>
+                            Choose a Workout Plan
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
     <script src="js/script.js"></script>
     <script>
     // Dashboard-specific JavaScript
@@ -1059,21 +1320,12 @@ $current_date = date('l, F j');
 
         // Floating action buttons
         const sharePrayerBtn = document.getElementById('share-prayer-btn');
-        const shareTestimonialBtn = document.getElementById('share-testimonial-btn');
         const prayerModal = document.getElementById('prayer-modal');
-        const testimonialModal = document.getElementById('testimonial-modal');
 
         // Open prayer modal
         if (sharePrayerBtn) {
             sharePrayerBtn.addEventListener('click', function() {
                 prayerModal.style.display = 'flex';
-            });
-        }
-
-        // Open testimonial modal
-        if (shareTestimonialBtn) {
-            shareTestimonialBtn.addEventListener('click', function() {
-                testimonialModal.style.display = 'flex';
             });
         }
 
@@ -1095,6 +1347,9 @@ $current_date = date('l, F j');
                         break;
                     case 'steps':
                         document.getElementById('steps-modal').style.display = 'flex';
+                        break;
+                    case 'workout':
+                        document.getElementById('workout-modal').style.display = 'flex';
                         break;
                 }
             });
@@ -1163,6 +1418,25 @@ $current_date = date('l, F j');
                 .then(data => {
                     // Handle success - you might want to show a success message
                     // and refresh the content instead of redirecting
+                    window.location.reload();
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // Workout form submission handling
+        const workoutForms = document.querySelectorAll('.workout-complete-form, .workout-advance-form');
+        workoutForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('api.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
                     window.location.reload();
                 })
                 .catch(error => console.error('Error:', error));
