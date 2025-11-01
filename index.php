@@ -8,7 +8,6 @@ $user_id = authenticateUser();
 // Get user data
 $user = $faithFit->getUserProfile($user_id);
 $dashboard_data = $faithFit->getDashboardStats($user_id);
-$devotion = $faithFit->getDailyDevotion($user_id);
 
 // Get daily todos
 $daily_todos = $faithFit->getDailyTodos($user_id);
@@ -1087,7 +1086,9 @@ $current_date = date('l, F j');
                 switch(taskType) {
                     case 'devotion':
                         // Scroll to devotion section
-                        window.location.href = 'devotion_detail.php?id=<?php echo $devotion["id"] ?? 1; ?>';
+                        document.querySelector('.devotion-card').scrollIntoView({ 
+                            behavior: 'smooth' 
+                        });
                         break;
                     case 'weight':
                         document.getElementById('weight-modal').style.display = 'flex';
