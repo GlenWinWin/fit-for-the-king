@@ -132,6 +132,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
             }
             break;
 
+        case 'set_workout_schedule':
+            $workout_plan_id = intval($_POST['workout_plan_id']);
+            $scheduled_days = $_POST['scheduled_days'] ?? '';
+            
+            if ($workout_plan_id > 0 && !empty($scheduled_days)) {
+                $result = $faithFit->setWorkoutSchedule($user_id, $workout_plan_id, $scheduled_days);
+                if ($result) {
+                    $_SESSION['message'] = 'Workout schedule set successfully!';
+                    $_SESSION['message_type'] = 'success';
+                } else {
+                    $_SESSION['message'] = 'Error setting workout schedule';
+                    $_SESSION['message_type'] = 'error';
+                }
+            } else {
+                $_SESSION['message'] = 'Please select workout days';
+                $_SESSION['message_type'] = 'error';
+            }
+            break;
+
+        case 'log_workout_set':
+            $workout_day_exercise_id = intval($_POST['workout_day_exercise_id']);
+            $set_number = intval($_POST['set_number']);
+            $weight = floatval($_POST['weight']);
+            $reps = intval($_POST['reps']);
+            $unit = $_POST['unit'] ?? 'kg';
+            
+            if ($workout_day_exercise_id > 0 && $set_number > 0 && $reps > 0) {
+                $result = $faithFit->logWorkoutSet($user_id, $workout_day_exercise_id, $set_number, $weight, $reps, $unit);
+                if ($result) {
+                    $_SESSION['message'] = 'Set logged successfully!';
+                    $_SESSION['message_type'] = 'success';
+                } else {
+                    $_SESSION['message'] = 'Error logging set';
+                    $_SESSION['message_type'] = 'error';
+                }
+            } else {
+                $_SESSION['message'] = 'Please fill in all fields';
+                $_SESSION['message_type'] = 'error';
+            }
+            break;
+
         case 'complete_workout':
             $result = $faithFit->completeWorkout($user_id);
             if ($result) {
@@ -140,6 +181,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
             } else {
                 $_SESSION['message'] = 'Error completing workout';
                 $_SESSION['message_type'] = 'error';
+            }
+            break;
+
+        case 'complete_workout_day':
+            $workout_day_id = intval($_POST['workout_day_id']);
+            if ($workout_day_id > 0) {
+                $result = $faithFit->completeWorkoutDay($user_id, $workout_day_id);
+                if ($result) {
+                    $_SESSION['message'] = 'Workout completed! Great job!';
+                    $_SESSION['message_type'] = 'success';
+                } else {
+                    $_SESSION['message'] = 'Error completing workout';
+                    $_SESSION['message_type'] = 'error';
+                }
             }
             break;
 
@@ -216,7 +271,7 @@ if (isset($_GET['api'])) {
             case 'dashboard':
                 if ($method == 'GET') {
                     $stats = $faithFit->getDashboardStats($user_id);
-                    $devotion = $faithFit->getDailyDevotion();
+                    $devotion = $faithFit->getDailyDevotion($user_id);
                     $weight_history = $faithFit->getWeightHistory($user_id, 7);
                     $steps_history = $faithFit->getStepsHistory($user_id, 7);
                     
@@ -232,7 +287,7 @@ if (isset($_GET['api'])) {
             case 'devotion':
                 if ($method == 'GET') {
                     $date = $_GET['date'] ?? null;
-                    $devotion = $faithFit->getDailyDevotion();
+                    $devotion = $faithFit->getDailyDevotion($user_id, $date);
                     sendSuccess($devotion);
                 } elseif ($method == 'POST') {
                     $date = $input['date'] ?? null;
@@ -385,6 +440,80 @@ if (isset($_GET['api'])) {
                 if ($method == 'GET') {
                     $workout = $faithFit->getUserActiveWorkout($user_id);
                     sendSuccess($workout);
+                }
+                break;
+
+            case 'todays-workout':
+                if ($method == 'GET') {
+                    $workout = $faithFit->getTodaysWorkout($user_id);
+                    sendSuccess($workout);
+                }
+                break;
+
+            case 'workout-schedule':
+                if ($method == 'GET') {
+                    $schedule = $faithFit->getUserWorkoutSchedule($user_id);
+                    sendSuccess($schedule);
+                } elseif ($method == 'POST') {
+                    $workout_plan_id = intval($input['workout_plan_id']);
+                    $scheduled_days = $input['scheduled_days'] ?? '';
+                    
+                    if ($workout_plan_id > 0 && !empty($scheduled_days)) {
+                        $result = $faithFit->setWorkoutSchedule($user_id, $workout_plan_id, $scheduled_days);
+                        sendSuccess(['scheduled' => $result], $result ? 'Workout schedule set' : 'Error setting schedule');
+                    } else {
+                        sendError('Please select workout days');
+                    }
+                }
+                break;
+
+            case 'workout-history':
+                if ($method == 'GET') {
+                    $limit = $_GET['limit'] ?? 30;
+                    $history = $faithFit->getWorkoutHistory($user_id, $limit);
+                    sendSuccess($history);
+                }
+                break;
+
+            case 'exercise-progress':
+                if ($method == 'GET') {
+                    $exercise_id = $_GET['exercise_id'] ?? null;
+                    $days_back = $_GET['days_back'] ?? 30;
+                    if ($exercise_id) {
+                        $progress = $faithFit->getExerciseProgress($user_id, $exercise_id, $days_back);
+                        sendSuccess($progress);
+                    } else {
+                        sendError('Exercise ID required');
+                    }
+                }
+                break;
+
+            case 'log-workout-set':
+                if ($method == 'POST') {
+                    $workout_day_exercise_id = intval($input['workout_day_exercise_id']);
+                    $set_number = intval($input['set_number']);
+                    $weight = floatval($input['weight']);
+                    $reps = intval($input['reps']);
+                    $unit = $input['unit'] ?? 'kg';
+                    
+                    if ($workout_day_exercise_id > 0 && $set_number > 0 && $reps > 0) {
+                        $result = $faithFit->logWorkoutSet($user_id, $workout_day_exercise_id, $set_number, $weight, $reps, $unit);
+                        sendSuccess(['logged' => $result], $result ? 'Set logged successfully' : 'Error logging set');
+                    } else {
+                        sendError('Please fill in all fields');
+                    }
+                }
+                break;
+
+            case 'complete-workout-day':
+                if ($method == 'POST') {
+                    $workout_day_id = intval($input['workout_day_id']);
+                    if ($workout_day_id > 0) {
+                        $result = $faithFit->completeWorkoutDay($user_id, $workout_day_id);
+                        sendSuccess(['completed' => $result], $result ? 'Workout completed' : 'Error completing workout');
+                    } else {
+                        sendError('Invalid workout day ID');
+                    }
                 }
                 break;
 
