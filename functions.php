@@ -994,6 +994,84 @@ class FaithFitFunctions {
             return ['success' => false, 'message' => 'Database error occurred'];
         }
     }
+
+    public function getDevotionById($devotion_id, $user_id) {
+        // This should query your database for the specific devotion
+        // Example implementation:
+        $stmt = $this->conn->prepare("
+            SELECT d.*, 
+                COALESCE(ud.completed, 0) as user_completed
+            FROM devotions d 
+            LEFT JOIN user_devotions ud ON d.id = ud.devotion_id AND ud.user_id = ?
+            WHERE d.id = ?
+        ");
+        $stmt->bind_param("ii", $user_id, $devotion_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        
+        return null;
+    }
+
+    public function completeDevotion($user_id, $devotion_id = null) {
+        // If no specific devotion ID provided, use today's devotion
+        if ($devotion_id === null) {
+            $devotion_id = $this->getTodaysDevotionId();
+        }
+        
+        // Check if already completed today
+        $stmt = $this->conn->prepare("
+            SELECT id FROM user_devotions 
+            WHERE user_id = ? AND devotion_id = ? AND DATE(completed_date) = CURDATE()
+        ");
+        $stmt->bind_param("ii", $user_id, $devotion_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            // Already completed today
+            return true;
+        }
+        
+        // Mark as completed
+        $stmt = $this->conn->prepare("
+            INSERT INTO user_devotions (user_id, devotion_id, completed_date) 
+            VALUES (?, ?, NOW())
+            ON DUPLICATE KEY UPDATE completed_date = NOW()
+        ");
+        $stmt->bind_param("ii", $user_id, $devotion_id);
+        
+        if ($stmt->execute()) {
+            // Update daily todos
+            $this->updateDailyTodo($user_id, 'devotion_completed', true);
+            return true;
+        }
+        
+        return false;
+    }
+
+    private function getTodaysDevotionId() {
+        // Get today's devotion ID
+        $stmt = $this->conn->prepare("
+            SELECT id FROM devotions 
+            WHERE devotion_date = CURDATE() 
+            ORDER BY id DESC 
+            LIMIT 1
+        ");
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row['id'];
+        }
+        
+        // Return a default devotion ID if none found for today
+        return 1;
+    }
 }
 
 // Helper function to format time elapsed

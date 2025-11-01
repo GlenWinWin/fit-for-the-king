@@ -172,9 +172,6 @@ $theme_class = $theme === 'light' ? 'light-mode' : 'dark-mode';
 
                 <!-- Floating Action Buttons -->
                 <div class="floating-action-buttons">
-                    <button class="floating-action-btn primary" id="share-prayer-btn" title="Share Prayer Request">
-                        <i class="fas fa-hands-praying"></i>
-                    </button>
                     <button class="floating-action-btn secondary" id="share-testimonial-btn" title="Share Testimonial">
                         <i class="fas fa-heart"></i>
                     </button>
@@ -197,49 +194,6 @@ $theme_class = $theme === 'light' ? 'light-mode' : 'dark-mode';
                 <span>Community</span>
             </a>
         </nav>
-    </div>
-
-    <!-- Prayer Request Modal -->
-    <div class="modal" id="prayer-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Share Prayer Request</h3>
-                <span class="close">&times;</span>
-            </div>
-            <form method="POST" action="api.php">
-                <input type="hidden" name="action" value="create_prayer_request">
-                <div class="form-group">
-                    <label for="prayer-title">Title (Optional)</label>
-                    <input type="text" class="form-control" id="prayer-title" name="title" placeholder="Brief title for your request">
-                </div>
-                <div class="form-group">
-                    <label for="prayer-category">Category</label>
-                    <select class="form-control" id="prayer-category" name="category">
-                        <option value="fitness">Fitness Goals</option>
-                        <option value="healing">Healing</option>
-                        <option value="strength">Strength</option>
-                        <option value="discipline">Discipline</option>
-                        <option value="spiritual">Spiritual Growth</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="prayer-content">Your Request</label>
-                    <textarea class="form-control" id="prayer-content" name="content" placeholder="Share your prayer request..." required rows="5"></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_anonymous" value="1">
-                        <span class="checkmark"></span>
-                        Share anonymously
-                    </label>
-                </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-paper-plane"></i>
-                    Share Request
-                </button>
-            </form>
-        </div>
     </div>
 
     <!-- Testimonial Modal -->
@@ -376,16 +330,9 @@ $theme_class = $theme === 'light' ? 'light-mode' : 'dark-mode';
         });
 
         // Modal functionality
-        const sharePrayerBtn = document.getElementById('share-prayer-btn');
         const shareTestimonialBtn = document.getElementById('share-testimonial-btn');
-        const prayerModal = document.getElementById('prayer-modal');
         const testimonialModal = document.getElementById('testimonial-modal');
         const closeButtons = document.querySelectorAll('.close');
-
-        // Open prayer modal
-        sharePrayerBtn.addEventListener('click', function() {
-            prayerModal.style.display = 'flex';
-        });
 
         // Open testimonial modal
         shareTestimonialBtn.addEventListener('click', function() {

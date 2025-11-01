@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['action'])) {
             $title = trim($_POST['title'] ?? '');
             $content = trim($_POST['content']);
             $category = $_POST['category'] ?? 'fitness';
-            $is_anonymous = isset($_POST['is_anonymous']) ? true : false;
+            $is_anonymous = false;
             
             if (!empty($content)) {
                 $result = $faithFit->createPrayerRequest($user_id, $content, $category, $is_anonymous, $title);

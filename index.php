@@ -951,13 +951,6 @@ $current_date = date('l, F j');
                     <label for="testimonial-content">Your Request</label>
                     <textarea class="form-control" id="testimonial-content" name="content" placeholder="Share your prayer request..." required rows="5"></textarea>
                 </div>
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_anonymous" value="1">
-                        <span class="checkmark"></span>
-                        Share anonymously
-                    </label>
-                </div>
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-paper-plane"></i>
                     Share Request
@@ -1094,9 +1087,7 @@ $current_date = date('l, F j');
                 switch(taskType) {
                     case 'devotion':
                         // Scroll to devotion section
-                        document.querySelector('.devotion-card').scrollIntoView({ 
-                            behavior: 'smooth' 
-                        });
+                        window.location.href = 'devotion_detail.php?id=<?php echo $devotion["id"] ?? 1; ?>';
                         break;
                     case 'weight':
                         document.getElementById('weight-modal').style.display = 'flex';
