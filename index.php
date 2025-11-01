@@ -1093,18 +1093,19 @@ $current_date = date('l, F j');
         </div>
 
         <!-- Bottom Navigation -->
+        <!-- Update bottom navigation in index.php -->
         <nav class="bottom-nav">
             <a href="index.php" class="nav-item active">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="analytics.php" class="nav-item">
-                <i class="fas fa-chart-line"></i>
-                <span>Analytics</span>
-            </a>
-            <a href="workouts.php" class="nav-item">
+            <a href="workout-tracker.php" class="nav-item">
                 <i class="fas fa-dumbbell"></i>
-                <span>Workouts</span>
+                <span>Workout</span>
+            </a>
+            <a href="workout-history.php" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Progress</span>
             </a>
             <a href="community.php" class="nav-item">
                 <i class="fas fa-users"></i>
@@ -1349,7 +1350,7 @@ $current_date = date('l, F j');
                         document.getElementById('steps-modal').style.display = 'flex';
                         break;
                     case 'workout':
-                        document.getElementById('workout-modal').style.display = 'flex';
+                        window.location.href = 'workout-tracker.php';
                         break;
                 }
             });

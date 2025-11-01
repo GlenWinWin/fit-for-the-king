@@ -489,12 +489,12 @@ class FaithFitFunctions {
 
             // If no todos for TODAY, create fresh ones
             if (!$todos) {
-                // Check if user has an active workout
-                $hasWorkout = $this->getUserActiveWorkout($user_id) !== null;
+                // Check if user has a workout scheduled for today
+                $hasWorkout = $this->getTodaysWorkout($user_id) !== null;
                 
                 // Create new todo record for today
                 $insertQuery = "INSERT INTO daily_todos (user_id, todo_date, devotion_completed, weight_logged, steps_logged, workout_completed) 
-                               VALUES (:user_id, :todo_date, false, false, false, false)";
+                            VALUES (:user_id, :todo_date, false, false, false, false)";
                 $insertStmt = $this->conn->prepare($insertQuery);
                 $insertStmt->bindParam(":user_id", $user_id);
                 $insertStmt->bindParam(":todo_date", $date);
@@ -512,7 +512,7 @@ class FaithFitFunctions {
                 }
             } else {
                 // Add workout info to existing todos
-                $todos['has_workout'] = $this->getUserActiveWorkout($user_id) !== null;
+                $todos['has_workout'] = $this->getTodaysWorkout($user_id) !== null;
             }
 
             return $todos;
@@ -520,7 +520,7 @@ class FaithFitFunctions {
         } catch(PDOException $e) {
             error_log("Todo error: " . $e->getMessage());
             // Return default structure on error
-            $hasWorkout = $this->getUserActiveWorkout($user_id) !== null;
+            $hasWorkout = $this->getTodaysWorkout($user_id) !== null;
             return [
                 'devotion_completed' => false,
                 'weight_logged' => false,
@@ -1121,6 +1121,252 @@ class FaithFitFunctions {
         } catch(PDOException $e) {
             error_log("Delete exercise error: " . $e->getMessage());
             return ['success' => false, 'message' => 'Database error occurred'];
+        }
+    }
+
+    // WORKOUT SCHEDULING AND TRACKING FUNCTIONS
+    public function setWorkoutSchedule($user_id, $workout_plan_id, $scheduled_days) {
+        try {
+            // Deactivate any current schedule
+            $deactivateQuery = "UPDATE user_workout_schedule SET is_active = 0 WHERE user_id = :user_id AND is_active = 1";
+            $deactivateStmt = $this->conn->prepare($deactivateQuery);
+            $deactivateStmt->bindParam(":user_id", $user_id);
+            $deactivateStmt->execute();
+
+            // Set new schedule
+            $query = "INSERT INTO user_workout_schedule (user_id, workout_plan_id, scheduled_days, start_date) 
+                    VALUES (:user_id, :workout_plan_id, :scheduled_days, CURDATE())";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->bindParam(":workout_plan_id", $workout_plan_id, PDO::PARAM_INT);
+            $stmt->bindParam(":scheduled_days", $scheduled_days);
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Set workout schedule error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getUserWorkoutSchedule($user_id) {
+        try {
+            $query = "SELECT uws.*, wp.name as plan_name, wp.difficulty, wp.duration_weeks
+                    FROM user_workout_schedule uws
+                    JOIN workout_plans wp ON uws.workout_plan_id = wp.id
+                    WHERE uws.user_id = :user_id AND uws.is_active = 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Get user workout schedule error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getTodaysWorkout($user_id) {
+        try {
+            $schedule = $this->getUserWorkoutSchedule($user_id);
+            if (!$schedule) return null;
+
+            // Get current day of week (1=Monday, 7=Sunday)
+            $current_day = date('N');
+            $scheduled_days = explode(',', $schedule['scheduled_days']);
+            
+            // Check if today is a workout day
+            if (!in_array($current_day, $scheduled_days)) {
+                return null;
+            }
+
+            // Get the workout day based on schedule progression
+            $workout_day = $this->getNextWorkoutDay($user_id, $schedule['workout_plan_id'], $scheduled_days);
+            
+            if (!$workout_day) return null;
+
+            // Get workout details
+            $query = "SELECT wd.*, wp.name as plan_name
+                    FROM workout_days wd
+                    JOIN workout_plans wp ON wd.workout_plan_id = wp.id
+                    WHERE wd.workout_plan_id = :plan_id AND wd.day_number = :day_number";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":plan_id", $schedule['workout_plan_id']);
+            $stmt->bindParam(":day_number", $workout_day);
+            $stmt->execute();
+            
+            $workout = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($workout) {
+                // Get exercises with previous logs
+                $exercisesQuery = "SELECT wde.*, e.name, e.muscle_group, e.equipment, e.demonstration_video_url,
+                                        (SELECT MAX(log_date) FROM workout_logs wl 
+                                        WHERE wl.workout_day_exercise_id = wde.id AND wl.user_id = :user_id) as last_trained
+                                FROM workout_day_exercises wde
+                                JOIN exercises e ON wde.exercise_id = e.id
+                                WHERE wde.workout_day_id = :workout_day_id
+                                ORDER BY wde.exercise_order";
+                $exercisesStmt = $this->conn->prepare($exercisesQuery);
+                $exercisesStmt->bindParam(":user_id", $user_id);
+                $exercisesStmt->bindParam(":workout_day_id", $workout['id']);
+                $exercisesStmt->execute();
+                
+                $workout['exercises'] = $exercisesStmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Get previous logs for each exercise
+                foreach ($workout['exercises'] as &$exercise) {
+                    $logsQuery = "SELECT * FROM workout_logs 
+                                WHERE user_id = :user_id AND workout_day_exercise_id = :exercise_id
+                                AND log_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                                ORDER BY log_date DESC, set_number ASC";
+                    $logsStmt = $this->conn->prepare($logsQuery);
+                    $logsStmt->bindParam(":user_id", $user_id);
+                    $logsStmt->bindParam(":exercise_id", $exercise['id']);
+                    $logsStmt->execute();
+                    $exercise['previous_logs'] = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+            }
+            
+            return $workout;
+        } catch(PDOException $e) {
+            error_log("Get today's workout error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function getNextWorkoutDay($user_id, $plan_id, $scheduled_days) {
+        try {
+            // Get the last completed workout for this plan
+            $lastWorkoutQuery = "SELECT assigned_day FROM user_workout_assignments 
+                            WHERE user_id = :user_id AND workout_plan_id = :plan_id 
+                            AND completed_at IS NOT NULL 
+                            ORDER BY completed_at DESC LIMIT 1";
+            $lastWorkoutStmt = $this->conn->prepare($lastWorkoutQuery);
+            $lastWorkoutStmt->bindParam(":user_id", $user_id);
+            $lastWorkoutStmt->bindParam(":plan_id", $plan_id);
+            $lastWorkoutStmt->execute();
+            $lastWorkout = $lastWorkoutStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($lastWorkout) {
+                // Get next day in sequence
+                $totalDaysQuery = "SELECT COUNT(*) as total_days FROM workout_days WHERE workout_plan_id = :plan_id";
+                $totalDaysStmt = $this->conn->prepare($totalDaysQuery);
+                $totalDaysStmt->bindParam(":plan_id", $plan_id);
+                $totalDaysStmt->execute();
+                $totalDays = $totalDaysStmt->fetch(PDO::FETCH_ASSOC)['total_days'];
+                
+                $nextDay = $lastWorkout['assigned_day'] + 1;
+                return $nextDay > $totalDays ? 1 : $nextDay;
+            } else {
+                // Start from day 1
+                return 1;
+            }
+        } catch(PDOException $e) {
+            error_log("Get next workout day error: " . $e->getMessage());
+            return 1;
+        }
+    }
+
+    public function logWorkoutSet($user_id, $workout_day_exercise_id, $set_number, $weight, $reps_completed, $weight_unit = 'kg') {
+        try {
+            $query = "INSERT INTO workout_logs (user_id, workout_day_exercise_id, set_number, weight, weight_unit, reps_completed, log_date) 
+                    VALUES (:user_id, :workout_day_exercise_id, :set_number, :weight, :weight_unit, :reps_completed, CURDATE())
+                    ON DUPLICATE KEY UPDATE weight = :weight, reps_completed = :reps_completed, weight_unit = :weight_unit";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->bindParam(":workout_day_exercise_id", $workout_day_exercise_id, PDO::PARAM_INT);
+            $stmt->bindParam(":set_number", $set_number, PDO::PARAM_INT);
+            $stmt->bindParam(":weight", $weight);
+            $stmt->bindParam(":weight_unit", $weight_unit);
+            $stmt->bindParam(":reps_completed", $reps_completed, PDO::PARAM_INT);
+            
+            return $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Log workout set error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function completeWorkoutDay($user_id, $workout_day_id) {
+        try {
+            // Get workout day details
+            $dayQuery = "SELECT wd.*, wp.id as plan_id 
+                        FROM workout_days wd 
+                        JOIN workout_plans wp ON wd.workout_plan_id = wp.id 
+                        WHERE wd.id = :workout_day_id";
+            $dayStmt = $this->conn->prepare($dayQuery);
+            $dayStmt->bindParam(":workout_day_id", $workout_day_id);
+            $dayStmt->execute();
+            $workout_day = $dayStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$workout_day) return false;
+
+            // Record workout completion
+            $query = "INSERT INTO user_workout_assignments (user_id, workout_plan_id, assigned_day, scheduled_day, completed_at) 
+                    VALUES (:user_id, :plan_id, :day_number, :day_number, NOW())
+                    ON DUPLICATE KEY UPDATE completed_at = NOW()";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->bindParam(":plan_id", $workout_day['plan_id']);
+            $stmt->bindParam(":day_number", $workout_day['day_number']);
+            $result = $stmt->execute();
+            
+            if ($result) {
+                // Mark workout as completed in daily todos
+                $this->updateDailyTodo($user_id, 'workout_completed', true);
+                
+                // Update streak
+                $this->updateStreak($user_id, 'workout');
+            }
+            
+            return $result;
+        } catch(PDOException $e) {
+            error_log("Complete workout day error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getWorkoutHistory($user_id, $limit = 30) {
+        try {
+            $query = "SELECT ua.completed_at, wd.name as day_name, wp.name as plan_name, 
+                            COUNT(DISTINCT wl.workout_day_exercise_id) as exercises_completed,
+                            SUM(wl.reps_completed) as total_reps
+                    FROM user_workout_assignments ua
+                    JOIN workout_days wd ON (ua.workout_plan_id = wd.workout_plan_id AND ua.assigned_day = wd.day_number)
+                    JOIN workout_plans wp ON ua.workout_plan_id = wp.id
+                    LEFT JOIN workout_logs wl ON (ua.user_id = wl.user_id AND DATE(ua.completed_at) = wl.log_date)
+                    WHERE ua.user_id = :user_id AND ua.completed_at IS NOT NULL
+                    GROUP BY ua.completed_at, wd.name, wp.name
+                    ORDER BY ua.completed_at DESC 
+                    LIMIT :limit";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->bindParam(":limit", $limit, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Get workout history error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getExerciseProgress($user_id, $workout_day_exercise_id, $days_back = 30) {
+        try {
+            $query = "SELECT log_date, set_number, weight, reps_completed, weight_unit
+                    FROM workout_logs 
+                    WHERE user_id = :user_id AND workout_day_exercise_id = :exercise_id
+                    AND log_date >= DATE_SUB(CURDATE(), INTERVAL :days_back DAY)
+                    ORDER BY log_date DESC, set_number ASC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            $stmt->bindParam(":exercise_id", $workout_day_exercise_id, PDO::PARAM_INT);
+            $stmt->bindParam(":days_back", $days_back, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            error_log("Get exercise progress error: " . $e->getMessage());
+            return [];
         }
     }
 }
