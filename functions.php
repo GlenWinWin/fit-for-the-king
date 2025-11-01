@@ -723,8 +723,9 @@ class FaithFitFunctions {
 
     public function logWorkoutSet($user_id, $workout_day_exercise_id, $set_number, $weight, $reps_completed, $weight_unit = 'kg') {
         try {
-            $query = "INSERT INTO user_workout_logs (user_id, workout_day_exercise_id, set_number, weight, weight_unit, reps_completed) 
-                     VALUES (:user_id, :workout_day_exercise_id, :set_number, :weight, :weight_unit, :reps_completed)";
+            $query = "INSERT INTO workout_logs (user_id, workout_day_exercise_id, set_number, weight, weight_unit, reps_completed, log_date) 
+                    VALUES (:user_id, :workout_day_exercise_id, :set_number, :weight, :weight_unit, :reps_completed, CURDATE())
+                    ON DUPLICATE KEY UPDATE weight = :weight, reps_completed = :reps_completed, weight_unit = :weight_unit";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":user_id", $user_id);
             $stmt->bindParam(":workout_day_exercise_id", $workout_day_exercise_id, PDO::PARAM_INT);
@@ -1184,46 +1185,46 @@ class FaithFitFunctions {
             
             if (!$workout_day) return null;
 
-            // Get workout details
-            $query = "SELECT wd.*, wp.name as plan_name
+            // Get workout day ID
+            $dayQuery = "SELECT wd.*, wp.name as plan_name
                     FROM workout_days wd
                     JOIN workout_plans wp ON wd.workout_plan_id = wp.id
                     WHERE wd.workout_plan_id = :plan_id AND wd.day_number = :day_number";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":plan_id", $schedule['workout_plan_id']);
-            $stmt->bindParam(":day_number", $workout_day);
-            $stmt->execute();
+            $dayStmt = $this->conn->prepare($dayQuery);
+            $dayStmt->bindParam(":plan_id", $schedule['workout_plan_id']);
+            $dayStmt->bindParam(":day_number", $workout_day);
+            $dayStmt->execute();
             
-            $workout = $stmt->fetch(PDO::FETCH_ASSOC);
+            $workout = $dayStmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($workout) {
-                // Get exercises with previous logs
-                $exercisesQuery = "SELECT wde.*, e.name, e.muscle_group, e.equipment, e.demonstration_video_url,
-                                        (SELECT MAX(log_date) FROM workout_logs wl 
-                                        WHERE wl.workout_day_exercise_id = wde.id AND wl.user_id = :user_id) as last_trained
-                                FROM workout_day_exercises wde
-                                JOIN exercises e ON wde.exercise_id = e.id
-                                WHERE wde.workout_day_id = :workout_day_id
-                                ORDER BY wde.exercise_order";
-                $exercisesStmt = $this->conn->prepare($exercisesQuery);
-                $exercisesStmt->bindParam(":user_id", $user_id);
-                $exercisesStmt->bindParam(":workout_day_id", $workout['id']);
-                $exercisesStmt->execute();
-                
-                $workout['exercises'] = $exercisesStmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                // Get previous logs for each exercise
-                foreach ($workout['exercises'] as &$exercise) {
-                    $logsQuery = "SELECT * FROM workout_logs 
-                                WHERE user_id = :user_id AND workout_day_exercise_id = :exercise_id
-                                AND log_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-                                ORDER BY log_date DESC, set_number ASC";
-                    $logsStmt = $this->conn->prepare($logsQuery);
-                    $logsStmt->bindParam(":user_id", $user_id);
-                    $logsStmt->bindParam(":exercise_id", $exercise['id']);
-                    $logsStmt->execute();
-                    $exercise['previous_logs'] = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
-                }
+            if (!$workout) return null;
+
+            // Get exercises with previous logs
+            $exercisesQuery = "SELECT wde.*, e.name, e.muscle_group, e.equipment, e.demonstration_video_url,
+                                    (SELECT MAX(log_date) FROM workout_logs wl 
+                                    WHERE wl.workout_day_exercise_id = wde.id AND wl.user_id = :user_id) as last_trained
+                            FROM workout_day_exercises wde
+                            JOIN exercises e ON wde.exercise_id = e.id
+                            WHERE wde.workout_day_id = :workout_day_id
+                            ORDER BY wde.exercise_order";
+            $exercisesStmt = $this->conn->prepare($exercisesQuery);
+            $exercisesStmt->bindParam(":user_id", $user_id);
+            $exercisesStmt->bindParam(":workout_day_id", $workout['id']);
+            $exercisesStmt->execute();
+            
+            $workout['exercises'] = $exercisesStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Get previous logs for each exercise
+            foreach ($workout['exercises'] as &$exercise) {
+                $logsQuery = "SELECT * FROM workout_logs 
+                            WHERE user_id = :user_id AND workout_day_exercise_id = :exercise_id
+                            AND log_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                            ORDER BY log_date DESC, set_number ASC";
+                $logsStmt = $this->conn->prepare($logsQuery);
+                $logsStmt->bindParam(":user_id", $user_id);
+                $logsStmt->bindParam(":exercise_id", $exercise['id']);
+                $logsStmt->execute();
+                $exercise['previous_logs'] = $logsStmt->fetchAll(PDO::FETCH_ASSOC);
             }
             
             return $workout;
@@ -1263,26 +1264,6 @@ class FaithFitFunctions {
         } catch(PDOException $e) {
             error_log("Get next workout day error: " . $e->getMessage());
             return 1;
-        }
-    }
-
-    public function logWorkoutSet($user_id, $workout_day_exercise_id, $set_number, $weight, $reps_completed, $weight_unit = 'kg') {
-        try {
-            $query = "INSERT INTO workout_logs (user_id, workout_day_exercise_id, set_number, weight, weight_unit, reps_completed, log_date) 
-                    VALUES (:user_id, :workout_day_exercise_id, :set_number, :weight, :weight_unit, :reps_completed, CURDATE())
-                    ON DUPLICATE KEY UPDATE weight = :weight, reps_completed = :reps_completed, weight_unit = :weight_unit";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":user_id", $user_id);
-            $stmt->bindParam(":workout_day_exercise_id", $workout_day_exercise_id, PDO::PARAM_INT);
-            $stmt->bindParam(":set_number", $set_number, PDO::PARAM_INT);
-            $stmt->bindParam(":weight", $weight);
-            $stmt->bindParam(":weight_unit", $weight_unit);
-            $stmt->bindParam(":reps_completed", $reps_completed, PDO::PARAM_INT);
-            
-            return $stmt->execute();
-        } catch(PDOException $e) {
-            error_log("Log workout set error: " . $e->getMessage());
-            return false;
         }
     }
 

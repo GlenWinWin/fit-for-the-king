@@ -3,7 +3,7 @@ session_start();
 
 class Database {
     private $host = "localhost";
-    private $db_name = "faithfit_app";
+    private $db_name = "fitfortheking";
     private $username = "root";
     private $password = "";
     public $conn;

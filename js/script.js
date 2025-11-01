@@ -1,631 +1,526 @@
-// Theme functionality with AJAX
-function initTheme() {
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = themeToggle.querySelector('i');
-    const body = document.body;
-
-    themeToggle.addEventListener('click', function () {
-        const currentTheme = body.classList.contains('dark-mode') ? 'dark' : 'light';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-        // Update theme immediately for better UX
-        updateThemeLocally(newTheme, themeIcon, themeToggle);
-
-        // Send AJAX request to save theme preference
-        fetch('api.php?api=theme', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                theme: newTheme
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    throw new Error(data.message || 'Failed to save theme');
-                }
-                // Show success notification
-                showNotification('Theme updated successfully!', 'success');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Revert theme if save failed
-                updateThemeLocally(currentTheme, themeIcon, themeToggle);
-                showNotification('Failed to save theme preference', 'error');
-            });
-    });
+// Global utility functions
+function getCurrentPage() {
+    const path = window.location.pathname;
+    return path.split('/').pop() || 'index.php';
 }
 
-// Helper function to update theme locally
-function updateThemeLocally(theme, themeIcon, themeToggle) {
-    const body = document.body;
-
-    // Remove existing theme classes
-    body.classList.remove('dark-mode', 'light-mode');
-
-    // Add new theme class
-    body.classList.add(theme === 'dark' ? 'dark-mode' : 'light-mode');
-
-    // Update theme icon
-    themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-
-    // Update button title
-    themeToggle.title = `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`;
-
-    // Update logo
-    updateLogo(theme);
-}
-
-// Update logo based on theme
-function updateLogo(theme) {
-    const logoImg = document.querySelector('.logo img');
-    if (logoImg) {
-        logoImg.src = 'imgs/dark-logo.png';
-    }
-}
-
-// Update time and date
-function updateTime() {
-    const now = new Date();
-    const timeElement = document.getElementById('current-time');
-    const dateElement = document.getElementById('current-date');
-
-    // Format time
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    if (timeElement) {
-        timeElement.textContent = `${hours}:${minutes}`;
-    }
-
-    // Format date
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    if (dateElement) {
-        dateElement.textContent = now.toLocaleDateString('en-US', options);
-    }
-}
-
-// Navigation functionality
-function initNavigation() {
+function setActiveNavItem() {
+    const currentPage = getCurrentPage();
     const navItems = document.querySelectorAll('.nav-item');
-    const pages = document.querySelectorAll('.page');
 
     navItems.forEach(item => {
-        item.addEventListener('click', function () {
-            const targetPage = this.getAttribute('data-page');
-
-            // Update active nav item
-            navItems.forEach(nav => nav.classList.remove('active'));
-            this.classList.add('active');
-
-            // Show target page
-            pages.forEach(page => page.classList.remove('active'));
-            document.getElementById(targetPage).classList.add('active');
-        });
+        if (item && item.href) {
+            const itemPage = item.href.split('/').pop();
+            if (itemPage === currentPage) {
+                safeAddClass(item, 'active');
+            } else {
+                safeRemoveClass(item, 'active');
+            }
+        }
     });
 }
 
-// Tab functionality for community page
-function initTabs() {
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabBtns.forEach(tab => {
-        tab.addEventListener('click', function () {
-            const targetTab = this.getAttribute('data-tab');
-
-            // Update active tab
-            tabBtns.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-
-            // Show target tab content
-            tabContents.forEach(content => content.classList.remove('active'));
-            document.querySelector(`.tab-content[data-tab="${targetTab}"]`).classList.add('active');
-        });
-    });
+// Safe element query with null check
+function safeQuerySelector(selector) {
+    const element = document.querySelector(selector);
+    return element || null;
 }
 
-// Habit completion toggle
-function initHabitTracking() {
-    const habitCheckboxes = document.querySelectorAll('.habit-checkbox');
-
-    habitCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('click', function () {
-            const isCompleted = this.classList.contains('checked');
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'api.php';
-
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'action';
-            input.value = 'complete_devotion';
-
-            form.appendChild(input);
-            document.body.appendChild(form);
-            form.submit();
-        });
-    });
+// Safe class list operations
+function safeAddClass(element, className) {
+    if (element && element.classList) {
+        element.classList.add(className);
+    }
 }
 
-// Modal functionality
-function initModals() {
-    const weightModal = document.getElementById('weight-modal');
-    const stepsModal = document.getElementById('steps-modal');
-    const storyModal = document.getElementById('story-modal');
-    const prayerModal = document.getElementById('prayer-modal');
+function safeRemoveClass(element, className) {
+    if (element && element.classList) {
+        element.classList.remove(className);
+    }
+}
 
-    const weightBtn = document.getElementById('log-weight-btn');
-    const stepsBtn = document.getElementById('log-steps-btn');
-    const shareStoryBtn = document.getElementById('share-story-btn');
+// Safe event listener attachment
+function safeAddEventListener(element, event, handler) {
+    if (element && typeof handler === 'function') {
+        element.addEventListener(event, handler);
+    }
+}
 
+// Utility function to show loading state
+function showLoading(element) {
+    if (element && element.classList) {
+        element.classList.add('loading');
+        element.disabled = true;
+    }
+}
+
+// Utility function to hide loading state
+function hideLoading(element) {
+    if (element && element.classList) {
+        element.classList.remove('loading');
+        element.disabled = false;
+    }
+}
+
+// Main initialization
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('FaithFit App Initialized');
+
+    // Set active navigation item
+    setActiveNavItem();
+
+    // Theme toggle functionality
+    const themeToggle = safeQuerySelector('#theme-toggle');
+    if (themeToggle) {
+        safeAddEventListener(themeToggle, 'click', function () {
+            const currentTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            const formData = new FormData();
+            formData.append('action', 'update_theme');
+            formData.append('theme', newTheme);
+
+            fetch('api.php', {
+                method: 'POST',
+                body: formData
+            }).then(() => {
+                window.location.reload();
+            }).catch(error => {
+                console.error('Error updating theme:', error);
+            });
+        });
+    }
+
+    // User dropdown functionality
+    const userDropdowns = document.querySelectorAll('.user-dropdown');
+    userDropdowns.forEach(dropdown => {
+        safeAddEventListener(dropdown, 'click', function (e) {
+            e.stopPropagation();
+            const content = this.querySelector('.dropdown-content');
+            if (content) {
+                content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            }
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    safeAddEventListener(document, 'click', function () {
+        const dropdowns = document.querySelectorAll('.dropdown-content');
+        dropdowns.forEach(dropdown => {
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        });
+    });
+
+    // Modal functionality
+    const modals = document.querySelectorAll('.modal');
     const closeButtons = document.querySelectorAll('.close');
 
-    // Open modals
-    if (weightBtn) {
-        weightBtn.addEventListener('click', function () {
-            weightModal.style.display = 'flex';
-            // Auto-focus weight input
-            setTimeout(() => {
-                const weightInput = document.getElementById('weight-value');
-                if (weightInput) weightInput.focus();
-            }, 100);
-        });
-    }
-
-    if (stepsBtn) {
-        stepsBtn.addEventListener('click', function () {
-            stepsModal.style.display = 'flex';
-            // Auto-focus steps input
-            setTimeout(() => {
-                const stepsInput = document.getElementById('steps-value');
-                if (stepsInput) stepsInput.focus();
-            }, 100);
-        });
-    }
-
-    if (shareStoryBtn) {
-        shareStoryBtn.addEventListener('click', function () {
-            storyModal.style.display = 'flex';
-        });
-    }
-
     // Close modals
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            weightModal.style.display = 'none';
-            stepsModal.style.display = 'none';
-            storyModal.style.display = 'none';
-            prayerModal.style.display = 'none';
+    closeButtons.forEach(btn => {
+        safeAddEventListener(btn, 'click', function () {
+            const modal = this.closest('.modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
         });
     });
 
     // Close modal when clicking outside
-    window.addEventListener('click', function (event) {
-        if (event.target === weightModal) {
-            weightModal.style.display = 'none';
-        }
-        if (event.target === stepsModal) {
-            stepsModal.style.display = 'none';
-        }
-        if (event.target === storyModal) {
-            storyModal.style.display = 'none';
-        }
-        if (event.target === prayerModal) {
-            prayerModal.style.display = 'none';
-        }
+    safeAddEventListener(window, 'click', function (event) {
+        modals.forEach(modal => {
+            if (modal && event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     });
-}
 
-// Prayer button functionality with AJAX
-function initPrayerButtons() {
-    const prayerButtons = document.querySelectorAll('.prayer-action-btn');
+    // Form submission handling with error prevention
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        if (form && !form.classList.contains('no-ajax')) {
+            safeAddEventListener(form, 'submit', function (e) {
+                // Only prevent default for forms that should use AJAX
+                if (this.getAttribute('data-ajax') !== 'false') {
+                    e.preventDefault();
 
-    prayerButtons.forEach(button => {
-        // Only handle pray buttons (not comment buttons)
-        if (button.querySelector('.fa-hands-praying')) {
-            button.addEventListener('click', async function (e) {
-                e.preventDefault();
-                e.stopPropagation();
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        showLoading(submitButton);
+                    }
 
-                const prayerRequestId = this.getAttribute('data-request-id');
-                if (!prayerRequestId) return;
+                    const formData = new FormData(this);
+                    const action = this.getAttribute('action') || 'api.php';
 
-                const isActive = this.classList.contains('active');
-                const prayerCountElement = this.querySelector('.prayer-count');
-
-                try {
-                    const response = await fetch('api.php?api=pray', {
+                    fetch(action, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            prayer_request_id: prayerRequestId
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // Toggle active state
-                        this.classList.toggle('active');
-
-                        // Update count
-                        let currentCount = parseInt(prayerCountElement.textContent);
-                        if (data.prayed) {
-                            prayerCountElement.textContent = currentCount + 1;
-                            showNotification('Prayer counted! 🙏', 'success');
-                        } else {
-                            prayerCountElement.textContent = Math.max(0, currentCount - 1);
-                            showNotification('Prayer removed', 'info');
-                        }
-                    } else {
-                        showNotification(data.message || 'Error updating prayer', 'error');
-                    }
-                } catch (error) {
-                    console.error('Prayer error:', error);
-                    showNotification('Error updating prayer', 'error');
-                }
-            });
-        }
-    });
-}
-
-// Testimonial like functionality with AJAX
-function initTestimonialLikes() {
-    const testimonialButtons = document.querySelectorAll('.testimonial-action-btn');
-
-    testimonialButtons.forEach(button => {
-        button.addEventListener('click', async function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const testimonialId = this.getAttribute('data-testimonial-id');
-            if (!testimonialId) return;
-
-            const isActive = this.classList.contains('active');
-            const likeCountElement = this.querySelector('.like-count');
-
-            try {
-                const response = await fetch('api.php?api=like-testimonial', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        testimonial_id: testimonialId
+                        body: formData
                     })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Toggle active state
-                    this.classList.toggle('active');
-
-                    // Update count
-                    let currentCount = parseInt(likeCountElement.textContent);
-                    if (data.liked) {
-                        likeCountElement.textContent = currentCount + 1;
-                        showNotification('Liked! ❤️', 'success');
-                    } else {
-                        likeCountElement.textContent = Math.max(0, currentCount - 1);
-                        showNotification('Like removed', 'info');
-                    }
-                } else {
-                    showNotification(data.message || 'Error updating like', 'error');
-                }
-            } catch (error) {
-                console.error('Like error:', error);
-                showNotification('Error updating like', 'error');
-            }
-        });
-    });
-}
-
-// Quick actions functionality
-function initQuickActions() {
-    const quickPrayerBtn = document.getElementById('quick-prayer');
-    const quickWorkoutBtn = document.getElementById('quick-workout');
-    const quickBibleBtn = document.getElementById('quick-bible');
-
-    if (quickPrayerBtn) {
-        quickPrayerBtn.addEventListener('click', function () {
-            document.getElementById('prayer-modal').style.display = 'flex';
-        });
-    }
-
-    if (quickWorkoutBtn) {
-        quickWorkoutBtn.addEventListener('click', function () {
-            // Implement workout functionality
-            showNotification('Starting workout timer...', 'success');
-        });
-    }
-
-    if (quickBibleBtn) {
-        quickBibleBtn.addEventListener('click', function () {
-            // Implement Bible reading functionality
-            showNotification('Opening daily reading...', 'success');
-        });
-    }
-}
-
-// Mobile dropdown functionality for user menu
-function initMobileDropdown() {
-    const userDropdown = document.querySelector('.user-dropdown');
-
-    if (userDropdown) {
-        // For mobile devices, add click event for better touch support
-        userDropdown.addEventListener('click', function (e) {
-            if (window.innerWidth <= 768) {
-                e.preventDefault();
-                e.stopPropagation();
-                const dropdownContent = this.querySelector('.dropdown-content');
-                const isVisible = dropdownContent.style.display === 'block';
-
-                // Close all other dropdowns
-                document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-                    dropdown.style.display = 'none';
-                });
-
-                // Toggle this dropdown
-                dropdownContent.style.display = isVisible ? 'none' : 'block';
-            }
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function (e) {
-            if (!userDropdown.contains(e.target)) {
-                const dropdownContent = userDropdown.querySelector('.dropdown-content');
-                if (dropdownContent) {
-                    dropdownContent.style.display = 'none';
-                }
-            }
-        });
-
-        // Close dropdown when a link is clicked
-        const dropdownLinks = userDropdown.querySelectorAll('.dropdown-content a');
-        dropdownLinks.forEach(link => {
-            link.addEventListener('click', function () {
-                const dropdownContent = userDropdown.querySelector('.dropdown-content');
-                if (dropdownContent) {
-                    dropdownContent.style.display = 'none';
+                        .then(response => {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                            } else {
+                                return response.text();
+                            }
+                        })
+                        .then(data => {
+                            // Handle success
+                            window.location.reload();
+                        })
+                        .catch(error => {
+                            console.error('Form submission error:', error);
+                            if (submitButton) {
+                                hideLoading(submitButton);
+                            }
+                            // Fallback to normal form submission
+                            this.submit();
+                        });
                 }
             });
-        });
-    }
-}
-
-// Enhanced user dropdown hover functionality
-function initUserDropdown() {
-    const userDropdown = document.querySelector('.user-dropdown');
-
-    if (userDropdown) {
-        // Handle hover for desktop
-        userDropdown.addEventListener('mouseenter', function () {
-            if (window.innerWidth > 768) {
-                const dropdownContent = this.querySelector('.dropdown-content');
-                if (dropdownContent) {
-                    dropdownContent.style.display = 'block';
-                }
-            }
-        });
-
-        userDropdown.addEventListener('mouseleave', function () {
-            if (window.innerWidth > 768) {
-                const dropdownContent = this.querySelector('.dropdown-content');
-                if (dropdownContent) {
-                    // Small delay to prevent flickering
-                    setTimeout(() => {
-                        if (!userDropdown.matches(':hover')) {
-                            dropdownContent.style.display = 'none';
-                        }
-                    }, 100);
-                }
-            }
-        });
-    }
-}
-
-function showNotification(message, type = 'success') {
-    // Remove any existing notifications first
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(notification => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
         }
     });
 
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-${getNotificationIcon(type)}"></i>
-            <span>${message}</span>
-        </div>
-    `;
+    // Navigation click handling - Fixed version
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        safeAddEventListener(item, 'click', function (e) {
+            // Only handle if it's not an external link and has href
+            if (this.href && !this.target && this.href.startsWith(window.location.origin)) {
+                e.preventDefault();
 
-    document.body.appendChild(notification);
+                // Update active state safely
+                navItems.forEach(nav => {
+                    safeRemoveClass(nav, 'active');
+                });
 
-    // Remove notification after 3 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
+                safeAddClass(this, 'active');
+
+                // Navigate to the page
+                window.location.href = this.href;
+            }
+        });
+    });
+
+    // Floating action buttons
+    const floatingButtons = document.querySelectorAll('.floating-action-btn');
+    floatingButtons.forEach(btn => {
+        safeAddEventListener(btn, 'click', function () {
+            const targetModal = this.getAttribute('data-modal');
+            if (targetModal) {
+                const modal = document.getElementById(targetModal);
+                if (modal) {
+                    modal.style.display = 'flex';
                 }
-            }, 300);
+            }
+        });
+    });
+
+    // Auto-hide messages after 5 seconds
+    const messages = document.querySelectorAll('.message');
+    messages.forEach(message => {
+        if (message) {
+            setTimeout(() => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 300);
+            }, 5000);
         }
-    }, 3000);
-}
+    });
 
-function getNotificationIcon(type) {
-    const icons = {
-        success: 'check-circle',
-        error: 'exclamation-circle',
-        info: 'info-circle'
-    };
-    return icons[type] || 'info-circle';
-}
+    // Add loading states to buttons
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(button => {
+        safeAddEventListener(button, 'click', function () {
+            if (this.type === 'submit' || this.getAttribute('type') === 'submit') {
+                showLoading(this);
 
-// Show message from PHP
-function showPHPMessage() {
-    // This would be handled by PHP session messages in the actual implementation
-    console.log('Message system ready');
-}
+                // Re-enable after 5 seconds in case of error
+                setTimeout(() => {
+                    hideLoading(this);
+                }, 5000);
+            }
+        });
+    });
 
-// Todo functionality
-// Simplified Todo functionality
-function initTodoSystem() {
-    console.log('Initializing todo system...');
+    // Task click handlers for dashboard
+    const todoItems = document.querySelectorAll('.todo-item');
+    todoItems.forEach(item => {
+        safeAddEventListener(item, 'click', function () {
+            const taskType = this.getAttribute('data-task');
 
-    // Add click listeners to all todo items
-    document.querySelectorAll('.todo-item').forEach(item => {
-        item.addEventListener('click', function (e) {
+            switch (taskType) {
+                case 'devotion':
+                    // Scroll to devotion section
+                    const devotionCard = safeQuerySelector('.devotion-card');
+                    if (devotionCard) {
+                        devotionCard.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                    break;
+                case 'weight':
+                    const weightModal = safeQuerySelector('#weight-modal');
+                    if (weightModal) {
+                        weightModal.style.display = 'flex';
+                    }
+                    break;
+                case 'steps':
+                    const stepsModal = safeQuerySelector('#steps-modal');
+                    if (stepsModal) {
+                        stepsModal.style.display = 'flex';
+                    }
+                    break;
+                case 'workout':
+                    // Navigate to workout tracker
+                    window.location.href = 'workout-tracker.php';
+                    break;
+            }
+        });
+    });
+
+    // Complete devotion button
+    const completeDevotionBtn = safeQuerySelector('#complete-devotion');
+    safeAddEventListener(completeDevotionBtn, 'click', function () {
+        if (!this.disabled) {
+            // Submit form to mark devotion complete
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'api.php';
+
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'complete_devotion';
+
+            form.appendChild(actionInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    // Workout form submission handling
+    const workoutForms = document.querySelectorAll('.workout-complete-form, .workout-advance-form');
+    workoutForms.forEach(form => {
+        safeAddEventListener(form, 'submit', function (e) {
             e.preventDefault();
-            e.stopPropagation();
 
-            const task = this.getAttribute('data-task');
-            console.log('Todo clicked:', task);
+            const formData = new FormData(this);
 
-            if (task === 'devotion') {
-                // Submit devotion form
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'api.php';
-                form.innerHTML = '<input type="hidden" name="action" value="complete_devotion">';
-                document.body.appendChild(form);
-                form.submit();
-            }
-            else if (task === 'weight') {
-                // Show weight modal
-                const modal = document.getElementById('weight-modal');
-                if (modal) modal.style.display = 'flex';
-            }
-            else if (task === 'steps') {
-                // Show steps modal
-                const modal = document.getElementById('steps-modal');
-                if (modal) modal.style.display = 'flex';
-            }
+            fetch('api.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Fallback to normal submission
+                    this.submit();
+                });
         });
     });
 
-    console.log('Todo system initialized');
-}
+    // Auto-save for workout sets
+    const setForms = document.querySelectorAll('.sets-form');
+    setForms.forEach(form => {
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            safeAddEventListener(input, 'change', function () {
+                // Add a small delay to avoid too many requests
+                clearTimeout(window.saveTimeout);
+                window.saveTimeout = setTimeout(() => {
+                    if (form.requestSubmit) {
+                        form.requestSubmit();
+                    } else {
+                        form.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
+                }, 500);
+            });
+        });
 
-function handleTodoClick(task, element) {
-    switch (task) {
-        case 'devotion':
-            if (!element.classList.contains('completed')) {
-                // Mark devotion as complete
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = 'api.php';
+        // Handle set form submission
+        safeAddEventListener(form, 'submit', function (e) {
+            e.preventDefault();
 
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'action';
-                input.value = 'complete_devotion';
+            const formData = new FormData(this);
+            formData.append('log_set', '1');
 
-                form.appendChild(input);
-                document.body.appendChild(form);
-                form.submit();
-            }
-            break;
+            fetch('workout-tracker.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.text())
+                .then(() => {
+                    // Show success feedback
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        const originalHtml = submitBtn.innerHTML;
+                        submitBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                        submitBtn.style.background = '#4CAF50';
 
-        case 'weight':
-            // Open weight modal (can update even if already completed)
-            document.getElementById('weight-modal').style.display = 'flex';
-            setTimeout(() => {
-                const weightInput = document.getElementById('weight-value');
-                if (weightInput) weightInput.focus();
-            }, 100);
-            break;
+                        setTimeout(() => {
+                            submitBtn.innerHTML = originalHtml;
+                            submitBtn.style.background = '';
+                        }, 1500);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+    });
 
-        case 'steps':
-            // Open steps modal (can update even if already completed)
-            document.getElementById('steps-modal').style.display = 'flex';
-            setTimeout(() => {
-                const stepsInput = document.getElementById('steps-value');
-                if (stepsInput) stepsInput.focus();
-            }, 100);
-            break;
-    }
-}
+    // Update time display
+    function updateTime() {
+        const now = new Date();
+        const timeElement = safeQuerySelector('#current-time');
+        const dateElement = safeQuerySelector('#current-date');
 
-// Update progress when todos are completed (for AJAX updates)
-function updateTodoProgress() {
-    const completedItems = document.querySelectorAll('.todo-item.completed').length;
-    const totalItems = 3;
-    const progressPercentage = (completedItems / totalItems) * 100;
+        if (timeElement) {
+            timeElement.textContent = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        }
 
-    const progressFill = document.querySelector('.progress-fill');
-    const progressText = document.querySelector('.progress-text');
-    const progressCount = document.querySelector('.progress-count');
-
-    if (progressFill) {
-        progressFill.style.width = progressPercentage + '%';
-    }
-    if (progressText) {
-        progressText.textContent = Math.round(progressPercentage) + '% Complete';
-    }
-    if (progressCount) {
-        progressCount.textContent = completedItems + '/3 completed';
-    }
-
-    // Celebrate if all tasks are completed
-    if (completedItems === totalItems) {
-        const streakBadge = document.querySelector('.streak-badge');
-        if (streakBadge) {
-            streakBadge.classList.add('streak-celebrate');
-            setTimeout(() => {
-                streakBadge.classList.remove('streak-celebrate');
-            }, 500);
+        if (dateElement) {
+            dateElement.textContent = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric'
+            });
         }
     }
-}
 
-// Initialize everything when DOM is loaded
-document.addEventListener('DOMContentLoaded', function () {
-    initTheme();
+    // Update time immediately and every minute
     updateTime();
     setInterval(updateTime, 60000);
 
-    initNavigation();
-    initTabs();
-    initHabitTracking();
-    initModals();
-    initPrayerButtons();
-    initTestimonialLikes();
-    initQuickActions();
-    showPHPMessage();
+    // Prayer request modal
+    const sharePrayerBtn = safeQuerySelector('#share-prayer-btn');
+    const prayerModal = safeQuerySelector('#prayer-modal');
 
-    updateTodoProgress();
-
-    // Initialize dropdown functionality
-    initMobileDropdown();
-    initUserDropdown();
-
-    initTodoSystem();
-
-    // Add some sample data for demonstration
-    setTimeout(() => {
-        // Auto-check devotion if not already checked
-        const devotionCheckbox = document.querySelector('.habit-checkbox[data-habit="devotion"]');
-        if (devotionCheckbox && !devotionCheckbox.classList.contains('checked')) {
-            // devotionCheckbox.click(); // Uncomment to auto-complete devotion for demo
+    safeAddEventListener(sharePrayerBtn, 'click', function () {
+        if (prayerModal) {
+            prayerModal.style.display = 'flex';
         }
-    }, 1000);
+    });
+
+    // Testimonial modal
+    const shareTestimonialBtn = safeQuerySelector('#share-testimonial-btn');
+    const testimonialModal = safeQuerySelector('#testimonial-modal');
+
+    if (shareTestimonialBtn && testimonialModal) {
+        safeAddEventListener(shareTestimonialBtn, 'click', function () {
+            testimonialModal.style.display = 'flex';
+        });
+    }
+
+    // Image preview for testimonial uploads
+    const imageInput = safeQuerySelector('#testimonial_image');
+    if (imageInput) {
+        safeAddEventListener(imageInput, 'change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const preview = safeQuerySelector('#image-preview') || document.createElement('img');
+                    preview.id = 'image-preview';
+                    preview.src = e.target.result;
+                    preview.style.maxWidth = '200px';
+                    preview.style.maxHeight = '200px';
+                    preview.style.marginTop = '10px';
+                    preview.style.borderRadius = '8px';
+
+                    if (!document.getElementById('image-preview')) {
+                        imageInput.parentNode.appendChild(preview);
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Like functionality for testimonials and prayers
+    const likeButtons = document.querySelectorAll('.like-btn, .pray-btn');
+    likeButtons.forEach(btn => {
+        safeAddEventListener(btn, 'click', function () {
+            const itemId = this.getAttribute('data-id');
+            const type = this.getAttribute('data-type');
+            const isLiked = this.classList.contains('liked');
+
+            if (type === 'testimonial') {
+                const formData = new FormData();
+                formData.append('action', 'like_testimonial');
+                formData.append('testimonial_id', itemId);
+
+                fetch('api.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const likeCount = this.querySelector('.like-count');
+                            if (likeCount) {
+                                const currentCount = parseInt(likeCount.textContent);
+                                likeCount.textContent = isLiked ? currentCount - 1 : currentCount + 1;
+                            }
+                            this.classList.toggle('liked');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        });
+    });
+
+    // Initialize any charts if present
+    const charts = document.querySelectorAll('.chart-container');
+    if (charts.length > 0) {
+        // Initialize charts here if needed
+        console.log('Charts found, initialize if needed');
+    }
+
+    // Smooth scrolling for anchor links
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
+    anchorLinks.forEach(link => {
+        safeAddEventListener(link, 'click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetElement = safeQuerySelector(targetId);
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Initialize tooltips if any
+    const tooltips = document.querySelectorAll('[data-tooltip]');
+    tooltips.forEach(tooltip => {
+        safeAddEventListener(tooltip, 'mouseenter', function () {
+            // Tooltip implementation can be added here
+        });
+    });
+
+    console.log('FaithFit App Initialization Complete');
 });
 
-// Handle window resize for responsive behavior
-window.addEventListener('resize', function () {
-    // Close dropdowns on resize to prevent stuck states
-    const dropdownContent = document.querySelector('.dropdown-content');
-    if (dropdownContent && window.innerWidth > 768) {
-        dropdownContent.style.display = 'none';
-    }
-});
+// Export functions for use in other scripts (if needed)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        getCurrentPage,
+        setActiveNavItem,
+        safeQuerySelector,
+        safeAddClass,
+        safeRemoveClass,
+        showLoading,
+        hideLoading
+    };
+}
