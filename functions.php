@@ -98,31 +98,27 @@ class FaithFitFunctions {
     }
 
     // DEVOTION FUNCTIONS
-    public function getDailyDevotion($user_id, $date = null) {
-        if (!$date) $date = date('Y-m-d');
-        
+    public function getDailyDevotion() {
         try {
-            $query = "SELECT * FROM daily_devotions 
-                      WHERE user_id = :user_id AND devotion_date = :devotion_date";
+            // Get a random devotion from the database
+            $query = "SELECT * FROM daily_devotions ORDER BY RAND() LIMIT 1";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":user_id", $user_id);
-            $stmt->bindParam(":devotion_date", $date);
             $stmt->execute();
             
             $devotion = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            // If no devotion for today, return a default one
+            // If no devotion exists, return a default one
             if (!$devotion) {
                 $devotion = [
                     'verse_text' => "I can do all things through Christ who strengthens me.",
                     'verse_reference' => "Philippians 4:13",
                     'devotion_text' => "In our fitness journey, we often focus on building physical strength through our own efforts. But true strength comes from surrendering to God's plan and allowing His power to work through us.",
-                    'is_completed' => false
                 ];
             }
             
             return $devotion;
         } catch(PDOException $e) {
+            error_log("Get devotion error: " . $e->getMessage());
             return false;
         }
     }
@@ -132,20 +128,10 @@ class FaithFitFunctions {
         if (!$date) $date = date('Y-m-d');
         
         try {
-            $query = "UPDATE daily_devotions 
-                    SET is_completed = TRUE 
-                    WHERE user_id = :user_id AND devotion_date = :devotion_date";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":user_id", $user_id);
-            $stmt->bindParam(":devotion_date", $date);
-            $result = $stmt->execute();
+            // Just update the daily todo - no longer tracking completion in daily_devotions table
+            $this->updateDailyTodo($user_id, 'devotion_completed', true, $date);
             
-            if ($result) {
-                // Update daily todo
-                $this->updateDailyTodo($user_id, 'devotion_completed', true, $date);
-            }
-            
-            return $result;
+            return true;
         } catch(PDOException $e) {
             error_log("Devotion complete error: " . $e->getMessage());
             return false;
@@ -993,84 +979,6 @@ class FaithFitFunctions {
             error_log("Delete exercise error: " . $e->getMessage());
             return ['success' => false, 'message' => 'Database error occurred'];
         }
-    }
-
-    public function getDevotionById($devotion_id, $user_id) {
-        // This should query your database for the specific devotion
-        // Example implementation:
-        $stmt = $this->conn->prepare("
-            SELECT d.*, 
-                COALESCE(ud.completed, 0) as user_completed
-            FROM devotions d 
-            LEFT JOIN user_devotions ud ON d.id = ud.devotion_id AND ud.user_id = ?
-            WHERE d.id = ?
-        ");
-        $stmt->bind_param("ii", $user_id, $devotion_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            return $result->fetch_assoc();
-        }
-        
-        return null;
-    }
-
-    public function completeDevotion($user_id, $devotion_id = null) {
-        // If no specific devotion ID provided, use today's devotion
-        if ($devotion_id === null) {
-            $devotion_id = $this->getTodaysDevotionId();
-        }
-        
-        // Check if already completed today
-        $stmt = $this->conn->prepare("
-            SELECT id FROM user_devotions 
-            WHERE user_id = ? AND devotion_id = ? AND DATE(completed_date) = CURDATE()
-        ");
-        $stmt->bind_param("ii", $user_id, $devotion_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            // Already completed today
-            return true;
-        }
-        
-        // Mark as completed
-        $stmt = $this->conn->prepare("
-            INSERT INTO user_devotions (user_id, devotion_id, completed_date) 
-            VALUES (?, ?, NOW())
-            ON DUPLICATE KEY UPDATE completed_date = NOW()
-        ");
-        $stmt->bind_param("ii", $user_id, $devotion_id);
-        
-        if ($stmt->execute()) {
-            // Update daily todos
-            $this->updateDailyTodo($user_id, 'devotion_completed', true);
-            return true;
-        }
-        
-        return false;
-    }
-
-    private function getTodaysDevotionId() {
-        // Get today's devotion ID
-        $stmt = $this->conn->prepare("
-            SELECT id FROM devotions 
-            WHERE devotion_date = CURDATE() 
-            ORDER BY id DESC 
-            LIMIT 1
-        ");
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            return $row['id'];
-        }
-        
-        // Return a default devotion ID if none found for today
-        return 1;
     }
 }
 
